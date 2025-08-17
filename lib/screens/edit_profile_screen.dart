@@ -1,4 +1,3 @@
-// Add imports
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -19,8 +18,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   bool saving = false;
   String? error;
 
-  // Controllers
-  final fullNameController = TextEditingController();
+  final userNameController = TextEditingController();
   final emailController = TextEditingController();
   final bioController = TextEditingController();
   final List<TextEditingController> _platformControllers = [];
@@ -34,7 +32,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   void dispose() {
-    fullNameController.dispose();
+    userNameController.dispose();
     emailController.dispose();
     bioController.dispose();
     for (var c in _platformControllers) c.dispose();
@@ -58,22 +56,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       if (profileRes.statusCode == 200) {
         profile = jsonDecode(profileRes.body);
-        fullNameController.text = profile!['full_name'] ?? '';
+        userNameController.text = profile!['username'] ?? '';
         emailController.text = profile!['email'] ?? '';
         bioController.text = profile!['bio'] ?? '';
       }
 
       if (linksRes.statusCode == 200) {
-        socialLinks =
-            List<Map<String, dynamic>>.from(jsonDecode(linksRes.body));
+        final responseData = jsonDecode(linksRes.body);
 
+        socialLinks = [];
         _platformControllers.clear();
         _urlControllers.clear();
 
+        if (responseData is List) {
+          socialLinks = List<Map<String, dynamic>>.from(responseData);
+        } else if (responseData is Map && responseData.containsKey('data')) {
+          socialLinks = List<Map<String, dynamic>>.from(responseData['data']);
+        }
+
         for (var link in socialLinks) {
           _platformControllers
-              .add(TextEditingController(text: link['platform_name']));
-          _urlControllers.add(TextEditingController(text: link['link_url']));
+              .add(TextEditingController(text: link['platform_name'] ?? ''));
+          _urlControllers
+              .add(TextEditingController(text: link['link_url'] ?? ''));
         }
       }
     } catch (e) {
@@ -85,7 +90,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   void addSocialLink() {
     setState(() {
-      final newLink = {'platform_name': '', 'link_url': '', 'id': null};
+      final newLink = {'platform_name': '', 'link_url': '', 'id': ''};
       socialLinks.add(newLink);
       _platformControllers.add(TextEditingController());
       _urlControllers.add(TextEditingController());
@@ -96,8 +101,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final link = socialLinks[index];
     final auth = context.read<AuthProvider>();
 
-    if (link['id'] != null) {
-      // Delete from server
+    if (link['id'] != null && link['id'].toString().isNotEmpty) {
       try {
         await Api.delete('/user/social-links/${link['id']}',
             headers: auth.authHeader());
@@ -109,7 +113,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
     }
 
-    // Remove locally
     setState(() {
       _platformControllers[index].dispose();
       _urlControllers[index].dispose();
@@ -124,39 +127,62 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final auth = context.read<AuthProvider>();
 
     try {
+      final validSocialLinks = <Map<String, dynamic>>[];
+      for (var i = 0; i < socialLinks.length; i++) {
+        final platform = _platformControllers[i].text.trim();
+        final url = _urlControllers[i].text.trim();
+
+        if (platform.isNotEmpty && url.isNotEmpty) {
+          validSocialLinks.add({
+            ...socialLinks[i],
+            'platform_name': platform,
+            'link_url': url,
+          });
+        }
+      }
+
       // Save profile
       await Api.put(
         '/user/profile',
         {
-          'full_name': fullNameController.text,
-          'email': emailController.text,
-          'bio': bioController.text,
+          'username': userNameController.text.trim(),
+          'email': emailController.text.trim(),
+          'bio': bioController.text.trim(),
         },
         headers: auth.authHeader(),
       );
 
       // Save social links
-      for (var i = 0; i < socialLinks.length; i++) {
-        final link = socialLinks[i];
+      for (var i = 0; i < validSocialLinks.length; i++) {
+        final link = validSocialLinks[i];
         final data = {
-          'platform_name': _platformControllers[i].text,
-          'link_url': _urlControllers[i].text,
+          'platform_name': link['platform_name'],
+          'link_url': link['link_url'],
         };
 
-        if ((link['id'] ?? '') != '') {
-          // Update existing
+        if (link['id'] != null &&
+            link['id'].toString().isNotEmpty &&
+            link['id'].toString() != 'null') {
           await Api.put('/user/social-links/${link['id']}', data,
               headers: auth.authHeader());
         } else {
-          // Create new and capture response
           final res = await Api.post('/user/social-links', data,
               headers: auth.authHeader());
           if (res.statusCode == 201 || res.statusCode == 200) {
             final created = jsonDecode(res.body);
-            socialLinks[i]['id'] = created['id']; // store new ID
+            final index = socialLinks.indexWhere((s) =>
+                s['platform_name'] == link['platform_name'] &&
+                s['link_url'] == link['link_url']);
+            if (index != -1) socialLinks[index]['id'] = created['id'];
           }
         }
       }
+
+      socialLinks.removeWhere((link) {
+        final platform = link['platform_name']?.toString().trim() ?? '';
+        final url = link['link_url']?.toString().trim() ?? '';
+        return platform.isEmpty || url.isEmpty;
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -217,54 +243,97 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Profile'),
+        title: const Text(
+          'Edit Profile',
+          style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontFamily: "NataSans"),
+        ),
+        centerTitle: true,
         actions: [
           saving
               ? const Padding(
                   padding: EdgeInsets.all(16.0),
                   child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white)),
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.black,
+                    ),
+                  ),
                 )
-              : IconButton(icon: const Icon(Icons.check), onPressed: saveAll),
+              : Container(
+                  margin:
+                      const EdgeInsets.only(right: 12), // optional right margin
+                  width: 36, // circle width
+                  height: 36, // circle height
+                  decoration: const BoxDecoration(
+                    color: Colors.black, // background color
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    iconSize: 20, // icon size
+                    icon: const Icon(Icons.check, color: Colors.white),
+                    onPressed: saveAll,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('PROFILE INFORMATION',
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0), // bottom margin
+              child: Text(
+                'PERSONAL INFORMATION',
                 style: theme.textTheme.labelSmall?.copyWith(
-                    letterSpacing: 1.5,
-                    color: colorScheme.onSurface.withOpacity(0.6))),
-            const SizedBox(height: 16),
+                  letterSpacing: 1.5,
+                  color: colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ),
+
+            // Personal Info
             TextField(
-                controller: fullNameController,
-                decoration: InputDecoration(
-                    labelText: 'Full Name',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)))),
-            const SizedBox(height: 16),
+              controller: userNameController,
+              decoration: InputDecoration(
+                hintText: 'Username',
+                isDense: true,
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+            const SizedBox(height: 12),
             TextField(
-                controller: emailController,
-                decoration: InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12))),
-                keyboardType: TextInputType.emailAddress),
-            const SizedBox(height: 16),
+              controller: emailController,
+              decoration: InputDecoration(
+                hintText: 'Email',
+                isDense: true,
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 12),
             TextField(
-                controller: bioController,
-                decoration: InputDecoration(
-                    labelText: 'Bio',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    alignLabelWithHint: true),
-                maxLines: 3),
-            const SizedBox(height: 32),
+              controller: bioController,
+              decoration: InputDecoration(
+                hintText: 'Bio',
+                isDense: true,
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 24),
+
+            // Social Links
             Row(
               children: [
                 Text('SOCIAL LINKS',
@@ -279,17 +348,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             const SizedBox(height: 8),
             if (socialLinks.isEmpty)
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                alignment: Alignment.center,
+              Center(
                 child: Column(
                   children: [
                     Icon(Icons.link_off,
-                        size: 32,
+                        size: 28,
                         color: colorScheme.onSurface.withOpacity(0.4)),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
                     Text('No social links added',
-                        style: theme.textTheme.bodyMedium?.copyWith(
+                        style: theme.textTheme.bodySmall?.copyWith(
                             color: colorScheme.onSurface.withOpacity(0.4))),
                   ],
                 ),
@@ -297,44 +364,82 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             else
               ...socialLinks.asMap().entries.map((entry) {
                 final index = entry.key;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _platformControllers[index],
-                              decoration: InputDecoration(
-                                  labelText: 'Platform',
-                                  border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12))),
-                              onChanged: (val) =>
-                                  socialLinks[index]['platform_name'] = val,
+                return Card(
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 1,
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Row(
+                      children: [
+                        // Platform Field
+                        Expanded(
+                          flex: 3,
+                          child: TextField(
+                            controller: _platformControllers[index],
+                            decoration: InputDecoration(
+                              hintText: 'Platform',
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 14),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[100],
                             ),
+                            onChanged: (val) =>
+                                socialLinks[index]['platform_name'] = val,
                           ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                              icon: Icon(Icons.close, color: colorScheme.error),
-                              onPressed: () => removeSocialLink(index)),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _urlControllers[index],
-                        decoration: InputDecoration(
-                            labelText: 'Link URL',
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12))),
-                        onChanged: (val) =>
-                            socialLinks[index]['link_url'] = val,
-                      ),
-                    ],
+                        ),
+                        const SizedBox(width: 12),
+
+                        // URL Field
+                        Expanded(
+                          flex: 5,
+                          child: TextField(
+                            controller: _urlControllers[index],
+                            decoration: InputDecoration(
+                              hintText: 'URL',
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 14),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[100],
+                            ),
+                            onChanged: (val) =>
+                                socialLinks[index]['link_url'] = val,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+
+                        // Remove Button
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.red.withOpacity(0.1),
+                          ),
+                          child: IconButton(
+                            iconSize: 20,
+                            icon: Icon(Icons.close, color: Colors.red),
+                            onPressed: () => removeSocialLink(index),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }),
-            const SizedBox(height: 40),
           ],
         ),
       ),

@@ -1,16 +1,10 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:media_store_plus/media_store_plus.dart';
 import 'package:tapapp_flutter/widgets/Loader.dart';
 
 import '../providers/auth_provider.dart';
@@ -57,74 +51,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _downloadQr() async {
-    try {
-      // ✅ Ask for storage permission first
-      var status = await Permission.storage.request();
-
-      if (status.isGranted) {
-        // continue with your logic
-      } else if (status.isDenied) {
-        // ❌ User denied
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Storage permission denied ❌')),
-        );
-        return;
-      } else if (status.isPermanentlyDenied) {
-        // ⚠️ User permanently denied → open app settings
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content:
-                Text('Permission permanently denied. Enable it in settings ⚙️'),
-          ),
-        );
-        openAppSettings();
-        return;
-      }
-
-      // ----- Proceed only if permission granted -----
-      RenderRepaintBoundary boundary =
-          _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-      ByteData? byteData =
-          await image.toByteData(format: ui.ImageByteFormat.png);
-      Uint8List pngBytes = byteData!.buffer.asUint8List();
-
-      // Save temporarily first
-      final dir = await getTemporaryDirectory();
-      final file =
-          File('${dir.path}/qr_${DateTime.now().millisecondsSinceEpoch}.png');
-      await file.writeAsBytes(pngBytes);
-
-      // Save to gallery using MediaStore
-      final mediaStore = MediaStore();
-      await mediaStore.saveFile(
-        tempFilePath: file.path, // <-- path to your saved file
-        dirType: DirType.download, // <-- still works for images
-        dirName: DirName.pictures, // <-- goes into Pictures
-      );
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('QR Code saved to Gallery ✅')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving QR: $e')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
 
-    if (loading) return Center(child: JumpingLoader());
+    if (loading) return const Center(child: JumpingLoader());
     if (error != null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Synapse')),
@@ -139,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (profile == null) return const SizedBox.shrink();
 
     final id = profile!['id'] ?? profile!['user_id'] ?? '';
-    final qrValue = '${Api.baseUrl}/user/$id';
+    final qrValue = '${Api.baseUrl}/user/api/user/profile/$id';
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -152,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(
             fontFamily: 'Cursive',
             // fontFamily: "NataSans",
-            fontSize: 30,
+            fontSize: 34,
             fontWeight: FontWeight.w900,
             letterSpacing: 2,
             color: ui.Color.fromARGB(255, 0, 0, 0),
@@ -174,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -199,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: isDarkMode
-                      ? theme.colorScheme.surfaceVariant
+                      ? theme.colorScheme.surfaceContainerHighest
                       : Colors.white,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: [
@@ -260,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
                 color: isDarkMode
-                    ? theme.colorScheme.surfaceVariant
+                    ? theme.colorScheme.surfaceContainerHighest
                     : const ui.Color.fromARGB(255, 255, 255, 255),
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -342,33 +275,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           'Share QR Code',
                           style: TextStyle(
                             color: theme.colorScheme.onPrimary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      side: BorderSide(color: theme.colorScheme.primary),
-                    ),
-                    onPressed: _downloadQr,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.download, color: theme.colorScheme.primary),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Save QR',
-                          style: TextStyle(
-                            color: theme.colorScheme.primary,
                             fontWeight: FontWeight.w500,
                           ),
                         ),

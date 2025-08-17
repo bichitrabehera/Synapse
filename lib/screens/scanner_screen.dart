@@ -25,9 +25,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
     if (raw == null) return;
 
     setState(() => _handling = true);
+    _controller.stop(); // stop scanning while processing
 
     try {
-      // Expect format: {Api.baseUrl}/user/<id>
       final id = raw.split('/').last;
       final res = await Api.get('/user/api/user/profile/$id');
 
@@ -35,17 +35,26 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
-        context.push('/scanned', extra: data);
+
+        // Navigate and wait for the user to come back
+        await context.push('/scanned', extra: data);
+
+        // When returning, restart scanner
+        if (mounted) {
+          _controller.start();
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lookup failed: ${res.statusCode}')),
         );
+        _controller.start(); // restart if failed
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
         );
+        _controller.start(); // restart on exception
       }
     } finally {
       if (mounted) setState(() => _handling = false);
@@ -179,20 +188,20 @@ class _ScannerScreenState extends State<ScannerScreen> {
         decoration: BoxDecoration(
           border: Border(
             top: isTop
-                ? BorderSide(
-                    color: const Color.fromARGB(255, 255, 255, 255), width: 4)
+                ? const BorderSide(
+                    color: Color.fromARGB(255, 255, 255, 255), width: 4)
                 : BorderSide.none,
             left: isLeft
-                ? BorderSide(
-                    color: const Color.fromARGB(255, 255, 255, 255), width: 4)
+                ? const BorderSide(
+                    color: Color.fromARGB(255, 255, 255, 255), width: 4)
                 : BorderSide.none,
             right: !isLeft
-                ? BorderSide(
-                    color: const Color.fromARGB(255, 255, 255, 255), width: 4)
+                ? const BorderSide(
+                    color: Color.fromARGB(255, 255, 255, 255), width: 4)
                 : BorderSide.none,
             bottom: !isTop
-                ? BorderSide(
-                    color: const Color.fromARGB(255, 255, 255, 255), width: 4)
+                ? const BorderSide(
+                    color: Color.fromARGB(255, 255, 255, 255), width: 4)
                 : BorderSide.none,
           ),
           borderRadius: BorderRadius.only(

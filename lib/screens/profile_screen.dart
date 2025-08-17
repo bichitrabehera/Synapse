@@ -30,14 +30,77 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => loading = true);
     try {
       final auth = context.read<AuthProvider>();
+
+      // Try loading from profile endpoint first (which includes social links)
       final p = await Api.get('/user/profile', headers: auth.authHeader());
-      final l =
-          await Api.get('/user/social-links/', headers: auth.authHeader());
-      if (p.statusCode == 200) profile = jsonDecode(p.body);
-      if (l.statusCode == 200) links = jsonDecode(l.body);
+      print('Profile response: ${p.statusCode} - ${p.body}');
+
+      if (p.statusCode == 200) {
+        profile = jsonDecode(p.body);
+        print('Profile data: $profile');
+
+        // Check if social links are included in profile response
+        if (profile != null && profile!['social_links'] != null) {
+          links = List<dynamic>.from(profile!['social_links']);
+          print('Social links from profile: $links');
+        } else {
+          // Fallback to separate social links endpoint
+          final l =
+              await Api.get('/user/social-links', headers: auth.authHeader());
+          print('Social links response: ${l.statusCode} - ${l.body}');
+
+          if (l.statusCode == 200) {
+            final responseData = jsonDecode(l.body);
+            print('Raw social links data: $responseData');
+
+            if (responseData is List) {
+              links = responseData;
+            } else if (responseData is Map &&
+                responseData.containsKey('data')) {
+              links = responseData['data'];
+            } else {
+              links = [];
+            }
+          } else {
+            links = [];
+          }
+        }
+      } else {
+        // Fallback to separate endpoints if profile endpoint fails
+        final l =
+            await Api.get('/user/social-links', headers: auth.authHeader());
+        print('Social links fallback response: ${l.statusCode} - ${l.body}');
+
+        if (l.statusCode == 200) {
+          final responseData = jsonDecode(l.body);
+          if (responseData is List) {
+            links = responseData;
+          } else if (responseData is Map && responseData.containsKey('data')) {
+            links = responseData['data'];
+          } else {
+            links = [];
+          }
+        } else {
+          links = [];
+        }
+      }
+
+      // Filter out invalid social links
+      links = links
+          .where((link) =>
+              link != null &&
+              link['platform_name'] != null &&
+              link['link_url'] != null &&
+              link['platform_name'].toString().isNotEmpty &&
+              link['link_url'].toString().isNotEmpty)
+          .toList();
+
+      print('Final processed links: $links');
       error = null;
     } catch (e) {
+      print('Error loading profile data: $e');
       error = e.toString();
+      links = [];
     }
     setState(() {
       loading = false;
@@ -128,16 +191,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const Text(
           'Profile',
           style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontFamily: "NataSans"
-          ),
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontFamily: "NataSans"),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, color: Colors.black),
-            onPressed: () => context.push('/edit'),
-          ),
+          Container(
+            margin: const EdgeInsets.only(right: 16), // margin from right
+            width: 36, // smaller circle width
+            height: 36, // smaller circle height
+            decoration: const BoxDecoration(
+              color: Colors.black, // background color
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              iconSize: 20, // smaller icon size
+              icon: const Icon(Icons.edit_outlined, color: Colors.white),
+              onPressed: () => context.push('/edit'),
+              padding: EdgeInsets.zero, // remove default padding
+              constraints: const BoxConstraints(), // tight constraints
+            ),
+          )
         ],
       ),
       body: RefreshIndicator(
@@ -189,7 +263,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // Username
               Text(
                 '@${profile!['username']}',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
@@ -257,7 +331,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 16),
                     ...links.map((link) => Card(
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           margin: const EdgeInsets.only(bottom: 12),
                           elevation: 1,
@@ -273,9 +347,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             title: Text(
                               link['platform_name'] ?? 'Social Link',
-                              style: TextStyle(color: Colors.black),
+                              style: const TextStyle(color: Colors.black),
                             ),
-                            trailing: Icon(
+                            trailing: const Icon(
                               Icons.arrow_forward_ios,
                               size: 16,
                               color: Colors.black,

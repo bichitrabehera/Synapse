@@ -27,19 +27,21 @@ class ScannedProfileScreen extends StatelessWidget {
 
     final username = map['username'] ?? 'user';
     final bio = map['bio'] ?? '';
-    final socialLinks = map['social_links'] is List ? map['social_links'] as List : [];
+    final socialLinks =
+        map['social_links'] is List ? map['social_links'] as List : [];
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
         title: const Text(
           'Scanned Profile',
           style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w500,
-          ),
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontFamily: "NataSans"),
         ),
         iconTheme: const IconThemeData(color: Colors.black),
       ),
@@ -61,10 +63,10 @@ class ScannedProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Username
             Text(
-              username,
+              '@$username',
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w500,
@@ -72,7 +74,7 @@ class ScannedProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            
+
             // Bio
             Text(
               bio,
@@ -84,7 +86,7 @@ class ScannedProfileScreen extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
-            
+
             // Social Links
             if (socialLinks.isNotEmpty) ...[
               const Divider(height: 1),
