@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
 import '../services/api.dart';
 import 'package:tapapp_flutter/widgets/Loader.dart';
@@ -26,66 +27,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _load();
   }
 
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      debugPrint('Could not launch $url');
+    }
+  }
+
   Future<void> _load() async {
     setState(() => loading = true);
     try {
       final auth = context.read<AuthProvider>();
-
-      // Try loading from profile endpoint first (which includes social links)
       final p = await Api.get('/user/profile', headers: auth.authHeader());
-      print('Profile response: ${p.statusCode} - ${p.body}');
 
       if (p.statusCode == 200) {
         profile = jsonDecode(p.body);
-        print('Profile data: $profile');
 
-        // Check if social links are included in profile response
         if (profile != null && profile!['social_links'] != null) {
           links = List<dynamic>.from(profile!['social_links']);
-          print('Social links from profile: $links');
         } else {
-          // Fallback to separate social links endpoint
           final l =
               await Api.get('/user/social-links', headers: auth.authHeader());
-          print('Social links response: ${l.statusCode} - ${l.body}');
-
           if (l.statusCode == 200) {
             final responseData = jsonDecode(l.body);
-            print('Raw social links data: $responseData');
-
             if (responseData is List) {
               links = responseData;
             } else if (responseData is Map &&
                 responseData.containsKey('data')) {
               links = responseData['data'];
-            } else {
-              links = [];
             }
-          } else {
-            links = [];
           }
-        }
-      } else {
-        // Fallback to separate endpoints if profile endpoint fails
-        final l =
-            await Api.get('/user/social-links', headers: auth.authHeader());
-        print('Social links fallback response: ${l.statusCode} - ${l.body}');
-
-        if (l.statusCode == 200) {
-          final responseData = jsonDecode(l.body);
-          if (responseData is List) {
-            links = responseData;
-          } else if (responseData is Map && responseData.containsKey('data')) {
-            links = responseData['data'];
-          } else {
-            links = [];
-          }
-        } else {
-          links = [];
         }
       }
 
-      // Filter out invalid social links
       links = links
           .where((link) =>
               link != null &&
@@ -95,16 +70,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               link['link_url'].toString().isNotEmpty)
           .toList();
 
-      print('Final processed links: $links');
       error = null;
     } catch (e) {
-      print('Error loading profile data: $e');
       error = e.toString();
       links = [];
     }
-    setState(() {
-      loading = false;
-    });
+    if (mounted) {
+      setState(() {
+        loading = false;
+      });
+    }
   }
 
   IconData _getPlatformIcon(String? platform) {
@@ -128,6 +103,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final auth = context.read<AuthProvider>();
 
     if (loading) {
       return Scaffold(
@@ -135,7 +111,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const JumpingLoader(), // <-- your loader here
+              const JumpingLoader(),
               const SizedBox(height: 16),
               Text(
                 'Loading your profile',
@@ -185,7 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        centerTitle: true, // ← This is the key property
+        centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
         title: const Text(
@@ -196,23 +172,102 @@ class _ProfileScreenState extends State<ProfileScreen> {
               fontFamily: "NataSans"),
         ),
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16), // margin from right
-            width: 36, // smaller circle width
-            height: 36, // smaller circle height
-            decoration: const BoxDecoration(
-              color: Colors.black, // background color
-              shape: BoxShape.circle,
+          Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.menu, color: Colors.black),
+              onPressed: () {
+                Scaffold.of(context).openEndDrawer();
+              },
             ),
-            child: IconButton(
-              iconSize: 20, // smaller icon size
-              icon: const Icon(Icons.edit_outlined, color: Colors.white),
-              onPressed: () => context.push('/edit'),
-              padding: EdgeInsets.zero, // remove default padding
-              constraints: const BoxConstraints(), // tight constraints
-            ),
-          )
+          ),
         ],
+      ),
+      endDrawer: Drawer(
+        width:
+            MediaQuery.of(context).size.width * 0.6, // slimmer (60% of screen)
+        backgroundColor: Colors.white, // white bg
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(1),
+            bottomLeft: Radius.circular(1),
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(
+                top: 30, left: 16, right: 16), // top space
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ---- Settings Heading ----
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 20),
+                  child: Text(
+                    "Settings",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                      fontFamily: "NataSans",
+                    ),
+                  ),
+                ),
+
+                // ---- Edit Profile ----
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/edit');
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.edit, color: Colors.black, size: 22),
+                        SizedBox(width: 12),
+                        Text(
+                          "Edit Profile",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const Divider(height: 1, thickness: 0.5),
+
+                // ---- Logout ----
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    auth.logout(context);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.logout, color: Colors.red, size: 22),
+                        SizedBox(width: 12),
+                        Text(
+                          "Logout",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: _load,
@@ -222,45 +277,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // WorldApp-style blue neon avatar
+              // ---- Avatar ----
               Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.4),
+                      blurRadius: 15,
+                      spreadRadius: 0,
+                    ),
+                  ],
+                ),
+                child: Container(
                   width: 120,
                   height: 120,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color.fromARGB(255, 255, 255, 255),
-                      width: 5,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      transform: GradientRotation(295 * 3.1416 / 180),
+                      colors: [
+                        Color.fromRGBO(9, 91, 168, 1),
+                        Color.fromRGBO(13, 49, 150, 1),
+                      ],
+                      stops: [0.41, 1.0],
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color.fromARGB(255, 255, 255, 255)
-                            .withOpacity(0.4),
-                        blurRadius: 15,
-                        spreadRadius: 0,
-                      ),
-                    ],
                   ),
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        transform: GradientRotation(
-                            295 * 3.1416 / 180), // rotate 295deg
-                        colors: [
-                          Color.fromRGBO(9, 91, 168, 1), // rgba(22,19,70,1)
-                          Color.fromRGBO(13, 49, 150, 1), // rgba(89,177,237,1)
-                        ],
-                        stops: [0.41, 1.0], // match CSS 41% and 100%
-                      ),
-                    ),
-                  )),
+                ),
+              ),
               const SizedBox(height: 16),
-              // Username
               Text(
                 '@${profile!['username']}',
                 style: const TextStyle(
@@ -270,7 +320,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              // Email
               Text(
                 profile!['email'] ?? '',
                 style: TextStyle(
@@ -279,7 +328,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              // Bio
               if (profile!['bio'] != null && profile!['bio'].isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -295,15 +343,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 24),
               Divider(color: Colors.black.withOpacity(0.1)),
               const SizedBox(height: 16),
-              // Joined Date
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.calendar_month_outlined,
-                    size: 18,
-                    color: Colors.black.withOpacity(0.6),
-                  ),
+                  Icon(Icons.calendar_month_outlined,
+                      size: 18, color: Colors.black.withOpacity(0.6)),
                   const SizedBox(width: 8),
                   Text(
                     'Joined $joinedDate',
@@ -315,7 +359,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
               const SizedBox(height: 32),
-              // Social Links
+
+              // ---- Social links ----
               if (links.isNotEmpty)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,12 +394,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               link['platform_name'] ?? 'Social Link',
                               style: const TextStyle(color: Colors.black),
                             ),
-                            trailing: const Icon(
-                              Icons.arrow_forward_ios,
-                              size: 16,
-                              color: Colors.black,
-                            ),
-                            onTap: () {},
+                            trailing: const Icon(Icons.arrow_forward_ios,
+                                size: 16, color: Colors.black),
+                            onTap: () => _launchUrl(link['link_url']),
                           ),
                         )),
                   ],

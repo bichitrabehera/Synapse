@@ -53,7 +53,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
 
@@ -72,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (profile == null) return const SizedBox.shrink();
 
     final id = profile!['id'] ?? profile!['user_id'] ?? '';
-    final qrValue = '${Api.baseUrl}/user/api/user/profile/$id';
+    final qrValue = 'https://synapseeee.vercel.app/u/$id';
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -91,13 +90,6 @@ class _HomeScreenState extends State<HomeScreen> {
             color: ui.Color.fromARGB(255, 0, 0, 0),
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout,
-                color: Color.fromARGB(255, 255, 0, 0), size: 24),
-            onPressed: () => auth.logout(context),
-          ),
-        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(

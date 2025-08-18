@@ -18,9 +18,48 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _error;
 
   @override
-  Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
+  void dispose() {
+    _email.dispose();
+    _password.dispose();
+    super.dispose();
+  }
 
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final success = await context.read<AuthProvider>().login(
+            _email.text.trim(),
+            _password.text.trim(),
+          );
+
+      if (!mounted) return;
+
+      if (!success) {
+        setState(() {
+          _error = "Incorrect email or password. Please try again.";
+          _loading = false;
+        });
+        return;
+      }
+
+      context.go('/home');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = "Login failed. Please try again.";
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: GestureDetector(
@@ -37,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     "Welcome Back",
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: 30,
                       fontWeight: FontWeight.w700,
                       color: Colors.grey.shade900,
                     ),
@@ -45,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Sign in to access your Synapse account",
+                    "Sign in to access your account",
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey.shade600,
@@ -71,33 +110,36 @@ class _LoginScreenState extends State<LoginScreen> {
                     hint: "Password",
                     icon: Icons.lock_outline,
                     validator: (v) =>
-                        (v ?? "").length >= 4 ? null : "Min 4 chars",
+                        (v ?? "").length >= 4 ? null : "Minimum 6 characters",
                     obscure: true,
                   ),
 
-                  // --- Forgot Password ---
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () => context.push('/forgot-password'),
-                      child: const Text(
-                        "Forgot Password?",
-                        style: TextStyle(
-                          color: Color(0xFF2563EB),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // --- Error message ---
+                  // --- Enhanced Error message ---
                   if (_error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Text(
-                        _error!,
-                        style: const TextStyle(color: Colors.red, fontSize: 14),
-                        textAlign: TextAlign.center,
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color.fromARGB(255, 255, 6, 31)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline, color: Colors.red),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _error!,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
 
@@ -113,28 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         elevation: 3,
                       ),
-                      onPressed: _loading
-                          ? null
-                          : () async {
-                              if (!_formKey.currentState!.validate()) return;
-                              setState(() {
-                                _loading = true;
-                                _error = null;
-                              });
-                              try {
-                                final success = await auth.login(
-                                  _email.text.trim(),
-                                  _password.text.trim(),
-                                );
-                                if (success && mounted) {
-                                  context.go('/home');
-                                }
-                              } catch (e) {
-                                setState(() => _error = e.toString());
-                              } finally {
-                                if (mounted) setState(() => _loading = false);
-                              }
-                            },
+                      onPressed: _loading ? null : _handleLogin,
                       child: _loading
                           ? const SizedBox(
                               width: 20,
@@ -184,7 +205,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   // --- Footer ---
                   Text(
-                    "Don’t have an account?",
+                    "Don't have an account?",
                     style: TextStyle(color: Colors.grey.shade600),
                   ),
                   const SizedBox(height: 12),
@@ -200,7 +221,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       onPressed: () => context.push('/register'),
                       child: const Text(
-                        "Create",
+                        "Create Account",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -247,6 +268,7 @@ class _LoginScreenState extends State<LoginScreen> {
               decoration: InputDecoration(
                 hintText: hint,
                 border: InputBorder.none,
+                errorStyle: const TextStyle(height: 0),
               ),
             ),
           ),
