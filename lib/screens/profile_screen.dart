@@ -169,7 +169,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
         title: const Text(
@@ -191,9 +190,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
       endDrawer: Drawer(
-        width:
-            MediaQuery.of(context).size.width * 0.6, // slimmer (60% of screen)
-        backgroundColor: Colors.white, // white bg
+        width: MediaQuery.of(context).size.width * 0.6,
+        backgroundColor: Colors.white,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(1),
@@ -202,12 +200,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.only(
-                top: 30, left: 16, right: 16), // top space
+            padding:
+                const EdgeInsets.only(top: 30, left: 16, right: 16), // top space
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ---- Settings Heading ----
                 const Padding(
                   padding: EdgeInsets.only(bottom: 20),
                   child: Text(
@@ -220,32 +217,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                 ),
-
-                // ---- Edit Profile ----
-                GestureDetector(
-                  onTap: () {
-                    Navigator.pop(context);
-                    context.push('/edit');
-                  },
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 14),
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit, color: Colors.black, size: 22),
-                        SizedBox(width: 12),
-                        Text(
-                          "Edit Profile",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
                 const Divider(height: 1, thickness: 0.5),
 
                 // ---- Logout ----
@@ -283,180 +254,132 @@ class _ProfileScreenState extends State<ProfileScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ---- Avatar ----
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.white.withOpacity(0.4),
-                      blurRadius: 15,
-                      spreadRadius: 0,
-                    ),
-                  ],
-                ),
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      transform: GradientRotation(295 * 3.1416 / 180),
-                      colors: [
-                        Color.fromRGBO(9, 91, 168, 1),
-                        Color.fromRGBO(13, 49, 150, 1),
-                      ],
-                      stops: [0.41, 1.0],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '@${profile!['username']}',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                profile!['email'] ?? '',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black.withOpacity(0.6),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Followers and Following counts
+              // --- Avatar + Stats Row ---
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Column(
-                    children: [
-                      Text(
-                        followersCount.toString(),
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const Text(
-                        'Followers',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.black54,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 40),
+                  // Avatar
                   Container(
-                    width: 1,
-                    height: 30,
-                    color: Colors.black.withOpacity(0.2),
+                    width: 90,
+                    height: 90,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [
+                          Color.fromRGBO(9, 91, 168, 1),
+                          Color.fromRGBO(13, 49, 150, 1),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 40),
-                  Column(
-                    children: [
-                      Text(
-                        followingCount.toString(),
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const Text(
-                        'Following',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.black54,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(width: 24),
+                  // Stats
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildStat("Followers", followersCount.toString()),
+                        _buildStat("Following", followingCount.toString()),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              if (profile!['bio'] != null && profile!['bio'].isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    profile!['bio'],
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.black.withOpacity(0.8),
-                    ),
+
+              const SizedBox(height: 12),
+
+              // --- Name + Username ---
+              Text(
+                profile!['fullname'] ?? '',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+              if (profile!['username'] != null)
+                Text(
+                  "@${profile!['username']}",
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
                   ),
                 ),
-              const SizedBox(height: 24),
-              Divider(color: Colors.black.withOpacity(0.1)),
-              const SizedBox(height: 16),
+
+              const SizedBox(height: 6),
+
+              // --- Bio ---
+              if (profile!['bio'] != null && profile!['bio'].isNotEmpty)
+                Text(
+                  profile!['bio'],
+                  style: const TextStyle(fontSize: 13, height: 1.3),
+                ),
+
+              const SizedBox(height: 6),
+
+              // --- Joined Date ---
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.calendar_month_outlined,
-                      size: 18, color: Colors.black.withOpacity(0.6)),
-                  const SizedBox(width: 8),
+                      size: 14, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
                   Text(
-                    'Joined $joinedDate',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black.withOpacity(0.6),
-                    ),
+                    "Joined $joinedDate",
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
               ),
-              const SizedBox(height: 32),
 
-              // ---- Social links ----
+              const SizedBox(height: 12),
+
+              // --- Edit Profile Button ---
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    side: const BorderSide(color: Colors.black12),
+                  ),
+                  onPressed: () {
+                    context.push('/edit');
+                  },
+                  child: const Text(
+                    "Edit Profile",
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // --- Links Section ---
               if (links.isNotEmpty)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'CONNECT',
-                      style: TextStyle(
-                        fontSize: 12,
-                        letterSpacing: 1.5,
-                        color: Colors.black.withOpacity(0.5),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ...links.map((link) => Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          margin: const EdgeInsets.only(bottom: 12),
-                          elevation: 1,
-                          color: Colors.white,
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor:
-                                  Colors.blueAccent.withOpacity(0.1),
-                              child: Icon(
-                                _getPlatformIcon(link['platform_name']),
-                                color: Colors.blueAccent,
-                              ),
+                    ...links.map((link) => InkWell(
+                          onTap: () => _launchUrl(link['link_url']),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _getPlatformIcon(link['platform_name']),
+                                  color: Colors.blueAccent,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    link['platform_name'] ?? '',
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_forward_ios, size: 14),
+                              ],
                             ),
-                            title: Text(
-                              link['platform_name'] ?? 'Social Link',
-                              style: const TextStyle(color: Colors.black),
-                            ),
-                            trailing: const Icon(Icons.arrow_forward_ios,
-                                size: 16, color: Colors.black),
-                            onTap: () => _launchUrl(link['link_url']),
                           ),
                         )),
                   ],
@@ -467,4 +390,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+}
+
+Widget _buildStat(String label, String count) {
+  return Column(
+    children: [
+      Text(
+        count,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+        ),
+      ),
+      const SizedBox(height: 2),
+      Text(
+        label,
+        style: const TextStyle(fontSize: 13, color: Colors.black54),
+      ),
+    ],
+  );
 }

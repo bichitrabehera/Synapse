@@ -18,6 +18,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   bool saving = false;
   String? error;
 
+  final fullNameController = TextEditingController();
   final userNameController = TextEditingController();
   final emailController = TextEditingController();
   final bioController = TextEditingController();
@@ -32,6 +33,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   void dispose() {
+    fullNameController.dispose();
     userNameController.dispose();
     emailController.dispose();
     bioController.dispose();
@@ -60,6 +62,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       if (profileRes.statusCode == 200) {
         profile = jsonDecode(profileRes.body);
+        fullNameController.text = profile!['fullname'] ?? '';
         userNameController.text = profile!['username'] ?? '';
         emailController.text = profile!['email'] ?? '';
         bioController.text = profile!['bio'] ?? '';
@@ -149,6 +152,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       await Api.put(
         '/user/profile',
         {
+          'fullname': fullNameController.text.trim(),
           'username': userNameController.text.trim(),
           'email': emailController.text.trim(),
           'bio': bioController.text.trim(),
@@ -304,6 +308,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
 
             // Personal Info
+            TextField(
+              controller: fullNameController,
+              decoration: InputDecoration(
+                hintText: 'Fullname',
+                isDense: true,
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+            const SizedBox(height: 12),
             TextField(
               controller: userNameController,
               decoration: InputDecoration(

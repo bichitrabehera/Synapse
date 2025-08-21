@@ -1,9 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class ScannedProfileScreen extends StatelessWidget {
-  final Object? data;
+class ScannedProfileScreen extends StatefulWidget {
+  final Map<String, dynamic>? data;
   const ScannedProfileScreen({super.key, this.data});
+
+  @override
+  State<ScannedProfileScreen> createState() => _ScannedProfileScreenState();
+}
+
+class _ScannedProfileScreenState extends State<ScannedProfileScreen> {
+  late Map<String, dynamic>? map;
+  bool isFollowing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    map = widget.data;
+  }
 
   Future<void> _launchUrl(String url) async {
     final uri = Uri.tryParse(url);
@@ -15,9 +29,8 @@ class ScannedProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final map = (data is Map<String, dynamic>)
-        ? data as Map<String, dynamic>
-        : (ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?);
+    // Fallback: get data from route arguments if not passed directly
+    map ??= ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
     if (map == null) {
       return const Scaffold(
@@ -25,10 +38,11 @@ class ScannedProfileScreen extends StatelessWidget {
       );
     }
 
-    final username = map['username'] ?? 'user';
-    final bio = map['bio'] ?? '';
+    final fullname = map!['full'] ?? 'user';
+    final username = map!['username'] ?? 'user';
+    final bio = map!['bio'] ?? '';
     final socialLinks =
-        map['social_links'] is List ? map['social_links'] as List : [];
+        map!['social_links'] is List ? map!['social_links'] as List : [];
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -37,11 +51,12 @@ class ScannedProfileScreen extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         title: const Text(
-          'Scanned Profile',
+          'Profile',
           style: TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-              fontFamily: "NataSans"),
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontFamily: "NataSans",
+          ),
         ),
         iconTheme: const IconThemeData(color: Colors.black),
       ),
@@ -53,38 +68,78 @@ class ScannedProfileScreen extends StatelessWidget {
             CircleAvatar(
               radius: 48,
               backgroundColor: Colors.grey[200],
-              child: Text(
-                username.isNotEmpty ? username[0].toUpperCase() : 'U',
-                style: const TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w300,
-                  color: Colors.black87,
-                ),
+              backgroundImage: map!['avatar_url'] != null
+                  ? NetworkImage(map!['avatar_url'])
+                  : null,
+              child: map!['avatar_url'] == null
+                  ? Text(
+                      username.isNotEmpty ? username[0].toUpperCase() : 'U',
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w300,
+                        color: Colors.black87,
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '$fullname',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
               ),
             ),
-            const SizedBox(height: 24),
-
             // Username
             Text(
               '@$username',
               style: const TextStyle(
                 fontSize: 20,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
                 color: Colors.black,
               ),
             ),
             const SizedBox(height: 8),
 
-            // Bio
-            Text(
-              bio,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black.withOpacity(0.6),
-                height: 1.4,
+            // Follow / Unfollow button
+            SizedBox(
+              width: 140,
+              child: TextButton(
+                onPressed: () {
+                  setState(() => isFollowing = !isFollowing);
+                },
+                style: TextButton.styleFrom(
+                  backgroundColor: isFollowing ? Colors.white : Colors.blue,
+                  foregroundColor: isFollowing ? Colors.black : Colors.white,
+                  side: isFollowing
+                      ? const BorderSide(color: Colors.grey, width: 0.8)
+                      : BorderSide.none,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                child: Text(
+                  isFollowing ? 'Following' : 'Follow',
+                  style: const TextStyle(fontSize: 14),
+                ),
               ),
-              textAlign: TextAlign.center,
             ),
+
+            const SizedBox(height: 16),
+
+            // Bio
+            if (bio.isNotEmpty)
+              Text(
+                bio,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black.withOpacity(0.7),
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
             const SizedBox(height: 32),
 
             // Social Links
@@ -103,7 +158,7 @@ class ScannedProfileScreen extends StatelessWidget {
                   title: Text(
                     platform,
                     style: const TextStyle(
-                      fontWeight: FontWeight.w400,
+                      fontWeight: FontWeight.w500,
                       color: Colors.black87,
                     ),
                   ),

@@ -95,7 +95,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
               fontWeight: FontWeight.bold,
               fontFamily: "NataSans"),
         ),
-        centerTitle: true,
+        // centerTitle: true,
         elevation: 0,
         actions: [
           IconButton(

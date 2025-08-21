@@ -38,7 +38,7 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
       });
       return;
     }
-    
+
     // Debounce search to avoid too many API calls
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted && _searchController.text.trim() == query) {
@@ -49,7 +49,7 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
 
   Future<void> _searchUsers(String query) async {
     if (query.isEmpty) return;
-    
+
     setState(() {
       _isLoading = true;
       _error = null;
@@ -60,7 +60,7 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
       if (authProvider.token == null) {
         throw Exception('Authentication required');
       }
-      
+
       final results = await ApiService.searchUsers(query, authProvider.token!);
       if (mounted) {
         setState(() {
@@ -98,12 +98,12 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await ApiService.followUser(userId, authProvider.token!);
-      
+
       // Refresh search results to update follow status
       if (_searchController.text.isNotEmpty) {
         await _searchUsers(_searchController.text);
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -128,12 +128,12 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await ApiService.unfollowUser(userId, authProvider.token!);
-      
+
       // Refresh search results to update follow status
       if (_searchController.text.isNotEmpty) {
         await _searchUsers(_searchController.text);
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -157,8 +157,15 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Search Users'),
+        title: const Text(
+          'Search',
+          style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontFamily: "NataSans"),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
       ),
@@ -169,13 +176,14 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search by username, full name, or email...',
+                
+                hintText: 'Search by username, full name, or email',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 filled: true,
-                fillColor: Colors.grey.shade100,
+                fillColor: const Color.fromARGB(255, 255, 255, 255),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear),
@@ -192,7 +200,6 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
               onSubmitted: _searchUsers,
             ),
           ),
-          
           if (_error != null)
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -217,27 +224,27 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
                 ),
               ),
             ),
-          
           if (_isLoading)
             const Padding(
               padding: EdgeInsets.all(16.0),
               child: Center(child: CircularProgressIndicator()),
             ),
-          
           Expanded(
             child: _searchResults.isEmpty && !_isLoading
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.search, size: 64, color: Colors.grey),
+                        const Icon(Icons.search, size: 64, color: Color.fromARGB(255, 65, 65, 65)),
                         const SizedBox(height: 16),
                         Text(
                           _searchController.text.isEmpty
-                              ? 'Search for users to connect with'
+                              ? 'Search for users to connect'
                               : 'No users found for "${_searchController.text}"',
-                          style: const TextStyle(color: Colors.grey),
+                    
+                          style: const TextStyle(color: Color.fromARGB(255, 65, 65, 65),fontSize: 14,),
                           textAlign: TextAlign.center,
+                          
                         ),
                       ],
                     ),
@@ -249,7 +256,7 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
                       return UserCard(
                         user: user,
                         onFollow: () => _followUser(user['id']),
-                        onUnfollow: () => _unfollowUser(user['id']),
+                        onUnfollow: () => _unfollowUser(user['id']), onTapProfile: () {  },
                       );
                     },
                   ),
@@ -260,43 +267,52 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
   }
 }
 
+
 class UserCard extends StatelessWidget {
   final Map<String, dynamic> user;
   final VoidCallback onFollow;
   final VoidCallback onUnfollow;
+  final VoidCallback onTapProfile; // 👈 Added for profile navigation
 
   const UserCard({
     super.key,
     required this.user,
     required this.onFollow,
     required this.onUnfollow,
+    required this.onTapProfile,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return InkWell(
+      onTap: onTapProfile, // 👈 tap anywhere to go to profile
+      borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
+            // Avatar
             CircleAvatar(
               radius: 24,
-              backgroundColor: Colors.blue.shade100,
-              child: Text(
-                user['fullname']?.substring(0, 1).toUpperCase() ?? '?',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue,
-                ),
-              ),
+              backgroundColor: Colors.grey.shade200,
+              backgroundImage: user['avatar_url'] != null
+                  ? NetworkImage(user['avatar_url'])
+                  : null,
+              child: user['avatar_url'] == null
+                  ? Text(
+                      user['fullname']?.substring(0, 1).toUpperCase() ?? '?',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    )
+                  : null,
             ),
-            const SizedBox(width: 16),
+
+            const SizedBox(width: 12),
+
+            // User Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -304,53 +320,42 @@ class UserCard extends StatelessWidget {
                   Text(
                     user['fullname'] ?? user['username'],
                     style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
                     ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
-                    '@${user['username']}',
+                    "@${user['username']}",
                     style: TextStyle(
                       color: Colors.grey.shade600,
-                      fontSize: 14,
-                    ),
-                  ),
-                  if (user['bio'] != null && user['bio'].isNotEmpty)
-                    Text(
-                      user['bio'],
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${user['followers_count']} followers · ${user['following_count']} following',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
+                      fontSize: 13,
                     ),
                   ),
                 ],
               ),
             ),
-            ElevatedButton(
+
+            // Follow / Unfollow button (like Instagram)
+            TextButton(
               onPressed: user['is_following'] ? onUnfollow : onFollow,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: user['is_following'] 
-                    ? Colors.grey.shade300 
-                    : Colors.blue,
+              style: TextButton.styleFrom(
+                backgroundColor:
+                    user['is_following'] ? Colors.white : Colors.blue,
+                foregroundColor:
+                    user['is_following'] ? Colors.black : Colors.white,
                 minimumSize: const Size(80, 32),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                side: user['is_following']
+                    ? const BorderSide(color: Colors.grey, width: 0.8)
+                    : BorderSide.none,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
               ),
               child: Text(
                 user['is_following'] ? 'Following' : 'Follow',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: user['is_following'] ? Colors.black : Colors.white,
-                ),
+                style: const TextStyle(fontSize: 13),
               ),
             ),
           ],
