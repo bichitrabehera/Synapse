@@ -20,6 +20,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   List<dynamic> links = [];
   bool loading = true;
   String? error;
+  int followersCount = 0;
+  int followingCount = 0;
 
   @override
   void initState() {
@@ -58,6 +60,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               links = responseData['data'];
             }
           }
+        }
+
+        // Populate followers and following counts
+        if (profile != null) {
+          followersCount = profile!['followers_count'] ?? 0;
+          followingCount = profile!['following_count'] ?? 0;
         }
       }
 
@@ -219,10 +227,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Navigator.pop(context);
                     context.push('/edit');
                   },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 14),
                     child: Row(
-                      children: const [
+                      children: [
                         Icon(Icons.edit, color: Colors.black, size: 22),
                         SizedBox(width: 12),
                         Text(
@@ -246,10 +254,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Navigator.pop(context);
                     auth.logout(context);
                   },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 14),
                     child: Row(
-                      children: const [
+                      children: [
                         Icon(Icons.logout, color: Colors.red, size: 22),
                         SizedBox(width: 12),
                         Text(
@@ -328,6 +336,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              // Followers and Following counts
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Column(
+                    children: [
+                      Text(
+                        followersCount.toString(),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const Text(
+                        'Followers',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 40),
+                  Container(
+                    width: 1,
+                    height: 30,
+                    color: Colors.black.withOpacity(0.2),
+                  ),
+                  const SizedBox(width: 40),
+                  Column(
+                    children: [
+                      Text(
+                        followingCount.toString(),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const Text(
+                        'Following',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
               if (profile!['bio'] != null && profile!['bio'].isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),

@@ -15,6 +15,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _username = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _fullname = TextEditingController();
   bool _loading = false;
   String? _error;
   bool _showPassword = false;
@@ -60,6 +61,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   _buildInputField(
                     controller: _username,
                     hint: "Username",
+                    icon: Icons.person_outline,
+                    validator: (v) =>
+                        (v ?? "").isNotEmpty ? null : "Required",
+                  ),
+
+                  // --- Full Name ---
+                  _buildInputField(
+                    controller: _fullname,
+                    hint: "Full Name",
                     icon: Icons.person_outline,
                     validator: (v) =>
                         (v ?? "").isNotEmpty ? null : "Required",
@@ -150,6 +160,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   'username': _username.text.trim(),
                                   'email': _email.text.trim(),
                                   'password': _password.text.trim(),
+                                  'fullname': _fullname.text.trim(),
                                 });
                                 if (context.mounted) {
                                   context.go('/home');

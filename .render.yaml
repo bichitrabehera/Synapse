@@ -1,0 +1,5 @@
+services:
+  - type: static
+    name: flutter-web
+    buildCommand: flutter build web
+    staticPublishPath: build/web

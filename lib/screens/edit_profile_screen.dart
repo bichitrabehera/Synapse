@@ -35,8 +35,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     userNameController.dispose();
     emailController.dispose();
     bioController.dispose();
-    for (var c in _platformControllers) c.dispose();
-    for (var c in _urlControllers) c.dispose();
+    for (var c in _platformControllers) {
+      c.dispose();
+    }
+    for (var c in _urlControllers) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -429,7 +433,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                           child: IconButton(
                             iconSize: 20,
-                            icon: Icon(Icons.close, color: Colors.red),
+                            icon: const Icon(Icons.close, color: Colors.red),
                             onPressed: () => removeSocialLink(index),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
