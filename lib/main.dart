@@ -41,8 +41,8 @@ class TapApp extends StatelessWidget {
                       builder: (ctx, st) => const EditProfileScreen()),
                   GoRoute(
                       path: 'scanned',
-                      builder: (ctx, st) =>
-                          ScannedProfileScreen(data: st.extra as Map<String, dynamic>?)),
+                      builder: (ctx, st) => ScannedProfileScreen(
+                          data: st.extra as Map<String, dynamic>?)),
                 ],
               ),
             ],

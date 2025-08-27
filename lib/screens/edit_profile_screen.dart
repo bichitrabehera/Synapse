@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api.dart';
+import 'package:tapapp_flutter/widgets/Loader.dart';
+
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -218,8 +220,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (loading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Edit Profile')),
-        body: const Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const JumpingLoader(),
+              const SizedBox(height: 16),
+              Text(
+                'Loading your profile',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: colorScheme.onSurface.withOpacity(0.8),
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 

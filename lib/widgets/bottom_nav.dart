@@ -33,19 +33,49 @@ class _BottomNavState extends State<BottomNav> {
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.white,
-        showSelectedLabels: false, // 🚫 hides selected label
-        showUnselectedLabels: false, // 🚫 hides unselected labels
+        elevation: 8,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
-
-        fixedColor: const Color.fromARGB(255, 0, 0, 0),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: "Search"),
+        items: [
           BottomNavigationBarItem(
-              icon: Icon(Icons.qr_code_scanner), label: "Scanner"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+            icon: Icon(
+              _selectedIndex == 0 ? Icons.home_rounded : Icons.home_outlined,
+              size: 28, // bigger size
+              color: Colors.black,
+            ),
+            label: "Home",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(
+              _selectedIndex == 1
+                  ? Icons.search_rounded
+                  : Icons.search_outlined,
+              size: 28,
+              color: Colors.black,
+            ),
+            label: "Search",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(
+              _selectedIndex == 2
+                  ? Icons.qr_code_scanner_rounded
+                  : Icons.qr_code_scanner_outlined,
+              size: 28,
+              color: Colors.black,
+            ),
+            label: "Scanner",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(
+              _selectedIndex == 3 ? Icons.person_rounded : Icons.person_outline,
+              size: 28,
+              color: Colors.black,
+            ),
+            label: "Profile",
+          ),
         ],
       ),
     );

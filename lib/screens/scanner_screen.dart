@@ -87,29 +87,15 @@ class _ScannerScreenState extends State<ScannerScreen> {
     final isDarkMode = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Scanner',
-          style: TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-              fontFamily: "NataSans"),
+      // 🔹 remove default AppBar height (just make it 0)
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(0),
+        child: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.transparent,
         ),
-        // centerTitle: true,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(_isFlashOn ? Icons.flash_on : Icons.flash_off),
-            onPressed: _toggleFlash,
-          ),
-          IconButton(
-            icon: Icon(
-              _isCameraFacingFront ? Icons.camera_front : Icons.camera_rear,
-            ),
-            onPressed: _switchCamera,
-          ),
-        ],
       ),
+      extendBodyBehindAppBar: true, // scanner goes full screen
       body: Stack(
         children: [
           MobileScanner(
@@ -118,6 +104,30 @@ class _ScannerScreenState extends State<ScannerScreen> {
             fit: BoxFit.cover,
           ),
           _buildScannerOverlay(context),
+
+          // 🔹 Flash & Camera toggle buttons overlayed
+          Positioned(
+            bottom: 40,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _circleButton(
+                  icon: _isFlashOn ? Icons.flash_on : Icons.flash_off,
+                  onTap: _toggleFlash,
+                ),
+                const SizedBox(width: 30),
+                _circleButton(
+                  icon: _isCameraFacingFront
+                      ? Icons.camera_front
+                      : Icons.camera_rear,
+                  onTap: _switchCamera,
+                ),
+              ],
+            ),
+          ),
+
           if (_handling)
             Center(
               child: Container(
@@ -146,6 +156,23 @@ class _ScannerScreenState extends State<ScannerScreen> {
     );
   }
 
+  /// Rounded floating buttons
+  Widget _circleButton({required IconData icon, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(30),
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.black54,
+        ),
+        child: Icon(icon, color: Colors.white, size: 28),
+      ),
+    );
+  }
+
   Widget _buildScannerOverlay(BuildContext context) {
     return Center(
       child: Container(
@@ -153,7 +180,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
         height: MediaQuery.of(context).size.width * 0.7,
         decoration: BoxDecoration(
           border: Border.all(
-            color: const Color.fromARGB(0, 255, 255, 255),
+            color: Colors.white,
             width: 2,
           ),
           borderRadius: BorderRadius.circular(12),
@@ -188,20 +215,16 @@ class _ScannerScreenState extends State<ScannerScreen> {
         decoration: BoxDecoration(
           border: Border(
             top: isTop
-                ? const BorderSide(
-                    color: Color.fromARGB(255, 255, 255, 255), width: 4)
+                ? const BorderSide(color: Colors.white, width: 4)
                 : BorderSide.none,
             left: isLeft
-                ? const BorderSide(
-                    color: Color.fromARGB(255, 255, 255, 255), width: 4)
+                ? const BorderSide(color: Colors.white, width: 4)
                 : BorderSide.none,
             right: !isLeft
-                ? const BorderSide(
-                    color: Color.fromARGB(255, 255, 255, 255), width: 4)
+                ? const BorderSide(color: Colors.white, width: 4)
                 : BorderSide.none,
             bottom: !isTop
-                ? const BorderSide(
-                    color: Color.fromARGB(255, 255, 255, 255), width: 4)
+                ? const BorderSide(color: Colors.white, width: 4)
                 : BorderSide.none,
           ),
           borderRadius: BorderRadius.only(

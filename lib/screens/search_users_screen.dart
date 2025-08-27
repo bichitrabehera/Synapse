@@ -159,13 +159,7 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'Search',
-          style: TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-              fontFamily: "NataSans"),
-        ),
+        toolbarHeight: 10, // default AppBar height
         backgroundColor: Colors.white,
         elevation: 0,
       ),
@@ -176,14 +170,20 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                
-                hintText: 'Search by username, full name, or email',
+                hintText: 'Search Network',
                 prefixIcon: const Icon(Icons.search),
+
+                // 🔹 Remove border color
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none, // no visible border
                 ),
+
+                // 🔹 Darker fill shade
                 filled: true,
-                fillColor: const Color.fromARGB(255, 255, 255, 255),
+                fillColor:
+                    Colors.grey.shade200, // pick a darker shade, e.g. grey[200]
+
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear),
@@ -235,16 +235,18 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.search, size: 64, color: Color.fromARGB(255, 65, 65, 65)),
+                        const Icon(Icons.search,
+                            size: 64, color: Color.fromARGB(255, 65, 65, 65)),
                         const SizedBox(height: 16),
                         Text(
                           _searchController.text.isEmpty
                               ? 'Search for users to connect'
                               : 'No users found for "${_searchController.text}"',
-                    
-                          style: const TextStyle(color: Color.fromARGB(255, 65, 65, 65),fontSize: 14,),
+                          style: const TextStyle(
+                            color: Color.fromARGB(255, 65, 65, 65),
+                            fontSize: 14,
+                          ),
                           textAlign: TextAlign.center,
-                          
                         ),
                       ],
                     ),
@@ -256,7 +258,8 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
                       return UserCard(
                         user: user,
                         onFollow: () => _followUser(user['id']),
-                        onUnfollow: () => _unfollowUser(user['id']), onTapProfile: () {  },
+                        onUnfollow: () => _unfollowUser(user['id']),
+                        onTapProfile: () {},
                       );
                     },
                   ),
@@ -266,7 +269,6 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
     );
   }
 }
-
 
 class UserCard extends StatelessWidget {
   final Map<String, dynamic> user;
