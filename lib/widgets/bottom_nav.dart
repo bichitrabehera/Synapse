@@ -32,7 +32,7 @@ class _BottomNavState extends State<BottomNav> {
     return Scaffold(
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color.fromARGB(255, 19, 19, 19),
         elevation: 8,
         showSelectedLabels: false,
         showUnselectedLabels: false,
@@ -44,7 +44,7 @@ class _BottomNavState extends State<BottomNav> {
             icon: Icon(
               _selectedIndex == 0 ? Icons.home_rounded : Icons.home_outlined,
               size: 28, // bigger size
-              color: Colors.black,
+              color: const Color.fromARGB(255, 255, 255, 255),
             ),
             label: "Home",
           ),
@@ -54,7 +54,7 @@ class _BottomNavState extends State<BottomNav> {
                   ? Icons.search_rounded
                   : Icons.search_outlined,
               size: 28,
-              color: Colors.black,
+              color: const Color.fromARGB(255, 255, 255, 255),
             ),
             label: "Search",
           ),
@@ -64,7 +64,7 @@ class _BottomNavState extends State<BottomNav> {
                   ? Icons.qr_code_scanner_rounded
                   : Icons.qr_code_scanner_outlined,
               size: 28,
-              color: Colors.black,
+              color: const Color.fromARGB(255, 255, 255, 255),
             ),
             label: "Scanner",
           ),
@@ -72,7 +72,7 @@ class _BottomNavState extends State<BottomNav> {
             icon: Icon(
               _selectedIndex == 3 ? Icons.person_rounded : Icons.person_outline,
               size: 28,
-              color: Colors.black,
+              color: const Color.fromARGB(255, 255, 255, 255),
             ),
             label: "Profile",
           ),

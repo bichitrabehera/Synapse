@@ -41,7 +41,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => loading = true);
     try {
       final auth = context.read<AuthProvider>();
-      final p = await Api.get('/user/profile', headers: auth.authHeader());
+      final p =
+          await Api.get('/user/profile', headers: await auth.authHeader());
 
       if (p.statusCode == 200) {
         profile = jsonDecode(p.body);
@@ -49,8 +50,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (profile != null && profile!['social_links'] != null) {
           links = List<dynamic>.from(profile!['social_links']);
         } else {
-          final l =
-              await Api.get('/user/social-links', headers: auth.authHeader());
+          final l = await Api.get('/user/social-links',
+              headers: await auth.authHeader());
           if (l.statusCode == 200) {
             final responseData = jsonDecode(l.body);
             if (responseData is List) {
@@ -115,6 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (loading) {
       return Scaffold(
+        backgroundColor: Colors.black,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -124,7 +126,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Text(
                 'Loading your profile',
                 style: theme.textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurface.withOpacity(0.8),
+                  color: Colors.white70,
                 ),
               ),
             ],
@@ -135,22 +137,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (error != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Profile')),
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          title: const Text(
+            'Profile',
+            style: TextStyle(color: Colors.white),
+          ),
+          elevation: 0,
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.error_outline, size: 48, color: colorScheme.error),
+                Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
                 const SizedBox(height: 16),
                 Text('Could not load profile',
-                    style: theme.textTheme.titleMedium),
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(color: Colors.white)),
                 const SizedBox(height: 8),
                 Text(error!,
                     textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.6))),
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: Colors.white60)),
                 const SizedBox(height: 24),
                 FilledButton(onPressed: _load, child: const Text('Try Again')),
               ],
@@ -167,21 +178,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
         : 'N/A';
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.black,
         elevation: 0,
         title: const Text(
           'Profile',
           style: TextStyle(
-              color: Colors.black,
+              color: Colors.white,
               fontWeight: FontWeight.bold,
               fontFamily: "NataSans"),
         ),
         actions: [
           Builder(
             builder: (context) => IconButton(
-              icon: const Icon(Icons.menu, color: Colors.black),
+              icon: const Icon(Icons.menu, color: Colors.white),
               onPressed: () {
                 Scaffold.of(context).openEndDrawer();
               },
@@ -191,7 +202,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       endDrawer: Drawer(
         width: MediaQuery.of(context).size.width * 0.6,
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.grey[900],
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(1),
@@ -200,8 +211,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding:
-                const EdgeInsets.only(top: 30, left: 16, right: 16), // top space
+            padding: const EdgeInsets.only(top: 30, left: 16, right: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -212,14 +222,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: Colors.white,
                       fontFamily: "NataSans",
                     ),
                   ),
                 ),
-                const Divider(height: 1, thickness: 0.5),
-
-                // ---- Logout ----
+                Divider(height: 1, thickness: 0.5, color: Colors.grey[700]),
                 GestureDetector(
                   onTap: () {
                     Navigator.pop(context);
@@ -229,14 +237,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: EdgeInsets.symmetric(vertical: 14),
                     child: Row(
                       children: [
-                        Icon(Icons.logout, color: Colors.red, size: 22),
+                        Icon(Icons.logout, color: Colors.redAccent, size: 22),
                         SizedBox(width: 12),
                         Text(
                           "Logout",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
-                            color: Colors.red,
+                            color: Colors.redAccent,
                           ),
                         ),
                       ],
@@ -256,10 +264,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- Avatar + Stats Row ---
+              // Avatar + Stats
               Row(
                 children: [
-                  // Avatar
                   Container(
                     width: 90,
                     height: 90,
@@ -276,7 +283,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(width: 24),
-                  // Stats
                   Expanded(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -288,15 +294,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ],
               ),
-
               const SizedBox(height: 12),
 
-              // --- Name + Username ---
+              // Name + Username
               Text(
                 profile!['fullname'] ?? '',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
+                  color: Colors.white,
                 ),
               ),
               if (profile!['username'] != null)
@@ -304,85 +310,89 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   "@${profile!['username']}",
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey[600],
+                    color: Colors.grey[400],
                   ),
                 ),
 
               const SizedBox(height: 6),
 
-              // --- Bio ---
+              // Bio
               if (profile!['bio'] != null && profile!['bio'].isNotEmpty)
                 Text(
                   profile!['bio'],
-                  style: const TextStyle(fontSize: 13, height: 1.3),
+                  style: const TextStyle(
+                      fontSize: 13, height: 1.3, color: Colors.white70),
                 ),
 
               const SizedBox(height: 6),
 
-              // --- Joined Date ---
+              // Joined Date
               Row(
                 children: [
                   Icon(Icons.calendar_month_outlined,
-                      size: 14, color: Colors.grey[600]),
+                      size: 14, color: Colors.grey[500]),
                   const SizedBox(width: 4),
                   Text(
                     "Joined $joinedDate",
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                   ),
                 ],
               ),
 
               const SizedBox(height: 12),
 
-              // --- Edit Profile Button ---
+              // Edit Profile Button
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 10),
-                    side: const BorderSide(color: Colors.black12),
+                    side: BorderSide(color: Colors.grey[700]!),
                   ),
                   onPressed: () {
                     context.push('/edit');
                   },
                   child: const Text(
                     "Edit Profile",
-                    style: TextStyle(fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w500, color: Colors.white),
                   ),
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              // --- Links Section ---
+              // Links Section
               if (links.isNotEmpty)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ...links.map((link) => InkWell(
-                          onTap: () => _launchUrl(link['link_url']),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _getPlatformIcon(link['platform_name']),
-                                  color: Colors.blueAccent,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    link['platform_name'] ?? '',
-                                    style: const TextStyle(fontSize: 14),
-                                  ),
-                                ),
-                                const Icon(Icons.arrow_forward_ios, size: 14),
-                              ],
+                  children: links.map((link) {
+                    return InkWell(
+                      onTap: () => _launchUrl(link['link_url']),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _getPlatformIcon(link['platform_name']),
+                              color: Colors.blueAccent,
+                              size: 20,
                             ),
-                          ),
-                        )),
-                  ],
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                link['platform_name'] ?? '',
+                                style: const TextStyle(
+                                    fontSize: 14, color: Colors.white),
+                              ),
+                            ),
+                            const Icon(Icons.arrow_forward_ios,
+                                size: 14, color: Colors.grey),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
             ],
           ),
@@ -400,12 +410,13 @@ Widget _buildStat(String label, String count) {
         style: const TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 16,
+          color: Color.fromARGB(137, 255, 255, 255)
         ),
       ),
       const SizedBox(height: 2),
       Text(
         label,
-        style: const TextStyle(fontSize: 13, color: Colors.black54),
+        style: const TextStyle(fontSize: 13, color: Color.fromARGB(137, 255, 255, 255)),
       ),
     ],
   );

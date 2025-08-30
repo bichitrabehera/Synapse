@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/api_service.dart';
 
 class SearchUsersScreen extends StatefulWidget {
@@ -12,7 +11,7 @@ class SearchUsersScreen extends StatefulWidget {
 
 class _SearchUsersScreenState extends State<SearchUsersScreen> {
   final _searchController = TextEditingController();
-  List<dynamic> _searchResults = [];
+  List<Map<String, dynamic>> _searchResults = [];
   bool _isLoading = false;
   String? _error;
 
@@ -39,12 +38,19 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
       return;
     }
 
-    // Debounce search to avoid too many API calls
+    // Debounce search
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted && _searchController.text.trim() == query) {
         _searchUsers(query);
       }
     });
+  }
+
+  // 🔹 Always refresh token
+  Future<String?> _getFirebaseToken() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw Exception('Authentication required');
+    return await user.getIdToken(true);
   }
 
   Future<void> _searchUsers(String query) async {
@@ -56,111 +62,59 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
     });
 
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      if (authProvider.token == null) {
-        throw Exception('Authentication required');
-      }
-
-      final results = await ApiService.searchUsers(query, authProvider.token!);
+      final token = await _getFirebaseToken();
+      final results = await ApiService.searchUsers(query, token!);
       if (mounted) {
         setState(() {
-          _searchResults = results;
+          _searchResults = List<Map<String, dynamic>>.from(results);
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = _getErrorMessage(e.toString());
+          _error = 'Authentication failed. Please login again.';
         });
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  String _getErrorMessage(String error) {
-    if (error.contains('401')) {
-      return 'Authentication failed. Please login again.';
-    } else if (error.contains('404')) {
-      return 'Search service not available.';
-    } else if (error.contains('500')) {
-      return 'Server error. Please try again later.';
-    } else {
-      return 'Failed to search users. Please try again.';
-    }
-  }
-
-  Future<void> _followUser(String userId) async {
+  Future<void> _toggleFollow(String userId, bool isFollowing) async {
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      await ApiService.followUser(userId, authProvider.token!);
+      final token = await _getFirebaseToken();
 
-      // Refresh search results to update follow status
-      if (_searchController.text.isNotEmpty) {
-        await _searchUsers(_searchController.text);
+      if (isFollowing) {
+        await ApiService.unfollowUser(userId, token!);
+      } else {
+        await ApiService.followUser(userId, token!);
       }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Successfully followed user'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+      setState(() {
+        final index = _searchResults.indexWhere((u) => u['id'] == userId);
+        if (index != -1) _searchResults[index]['is_following'] = !isFollowing;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isFollowing ? 'Unfollowed user' : 'Followed user'),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _unfollowUser(String userId) async {
-    try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      await ApiService.unfollowUser(userId, authProvider.token!);
-
-      // Refresh search results to update follow status
-      if (_searchController.text.isNotEmpty) {
-        await _searchUsers(_searchController.text);
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Successfully unfollowed user'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color.fromARGB(255, 0, 0, 0),
       appBar: AppBar(
-        toolbarHeight: 10, // default AppBar height
-        backgroundColor: Colors.white,
+        toolbarHeight: 10,
+        backgroundColor: const Color.fromARGB(255, 0, 0, 0),
         elevation: 0,
       ),
       body: Column(
@@ -172,18 +126,12 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
               decoration: InputDecoration(
                 hintText: 'Search Network',
                 prefixIcon: const Icon(Icons.search),
-
-                // 🔹 Remove border color
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none, // no visible border
+                  borderSide: BorderSide.none,
                 ),
-
-                // 🔹 Darker fill shade
                 filled: true,
-                fillColor:
-                    Colors.grey.shade200, // pick a darker shade, e.g. grey[200]
-
+                fillColor: const Color.fromARGB(255, 37, 37, 37),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear),
@@ -257,8 +205,10 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
                       final user = _searchResults[index];
                       return UserCard(
                         user: user,
-                        onFollow: () => _followUser(user['id']),
-                        onUnfollow: () => _unfollowUser(user['id']),
+                        onFollow: () =>
+                            _toggleFollow(user['id'], user['is_following']),
+                        onUnfollow: () =>
+                            _toggleFollow(user['id'], user['is_following']),
                         onTapProfile: () {},
                       );
                     },
@@ -274,7 +224,7 @@ class UserCard extends StatelessWidget {
   final Map<String, dynamic> user;
   final VoidCallback onFollow;
   final VoidCallback onUnfollow;
-  final VoidCallback onTapProfile; // 👈 Added for profile navigation
+  final VoidCallback onTapProfile;
 
   const UserCard({
     super.key,
@@ -287,13 +237,12 @@ class UserCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTapProfile, // 👈 tap anywhere to go to profile
+      onTap: onTapProfile,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            // Avatar
             CircleAvatar(
               radius: 24,
               backgroundColor: Colors.grey.shade200,
@@ -311,10 +260,7 @@ class UserCard extends StatelessWidget {
                     )
                   : null,
             ),
-
             const SizedBox(width: 12),
-
-            // User Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,8 +284,6 @@ class UserCard extends StatelessWidget {
                 ],
               ),
             ),
-
-            // Follow / Unfollow button (like Instagram)
             TextButton(
               onPressed: user['is_following'] ? onUnfollow : onFollow,
               style: TextButton.styleFrom(

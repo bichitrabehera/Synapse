@@ -5,7 +5,6 @@ import '../providers/auth_provider.dart';
 import '../services/api.dart';
 import 'package:tapapp_flutter/widgets/Loader.dart';
 
-
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
 
@@ -58,9 +57,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final auth = context.read<AuthProvider>();
 
       final profileRes =
-          await Api.get('/user/profile', headers: auth.authHeader());
+          await Api.get('/user/profile', headers: await auth.authHeader());
       final linksRes =
-          await Api.get('/user/social-links', headers: auth.authHeader());
+          await Api.get('/user/social-links', headers: await auth.authHeader());
 
       if (profileRes.statusCode == 200) {
         profile = jsonDecode(profileRes.body);
@@ -113,7 +112,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (link['id'] != null && link['id'].toString().isNotEmpty) {
       try {
         await Api.delete('/user/social-links/${link['id']}',
-            headers: auth.authHeader());
+            headers: await auth.authHeader());
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Failed to delete: $e'),
@@ -159,7 +158,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           'email': emailController.text.trim(),
           'bio': bioController.text.trim(),
         },
-        headers: auth.authHeader(),
+        headers: await auth.authHeader(),
       );
 
       // Save social links
@@ -174,10 +173,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             link['id'].toString().isNotEmpty &&
             link['id'].toString() != 'null') {
           await Api.put('/user/social-links/${link['id']}', data,
-              headers: auth.authHeader());
+              headers: await auth.authHeader());
         } else {
           final res = await Api.post('/user/social-links', data,
-              headers: auth.authHeader());
+              headers: await auth.authHeader());
           if (res.statusCode == 201 || res.statusCode == 200) {
             final created = jsonDecode(res.body);
             final index = socialLinks.indexWhere((s) =>
@@ -220,6 +219,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (loading) {
       return Scaffold(
+        backgroundColor: Colors.black,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -229,7 +229,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               Text(
                 'Loading your profile',
                 style: theme.textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurface.withOpacity(0.8),
+                  color: Colors.white70,
                 ),
               ),
             ],
@@ -240,21 +240,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (error != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Edit Profile')),
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          title: const Text('Edit Profile'),
+          backgroundColor: Colors.black,
+          elevation: 0,
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const Icon(Icons.error_outline,
+                    size: 48, color: Colors.redAccent),
                 const SizedBox(height: 16),
                 Text('Failed to load profile',
-                    style: theme.textTheme.titleMedium),
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(color: Colors.white)),
                 const SizedBox(height: 8),
                 Text(error!,
                     textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium),
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: Colors.white60)),
                 const SizedBox(height: 24),
                 FilledButton(onPressed: _load, child: const Text('Try Again')),
               ],
@@ -265,15 +273,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
 
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
         title: const Text(
           'Edit Profile',
           style: TextStyle(
-              color: Colors.black,
+              color: Colors.white,
               fontWeight: FontWeight.bold,
               fontFamily: "NataSans"),
         ),
         centerTitle: true,
+        backgroundColor: Colors.black,
+        elevation: 0,
         actions: [
           saving
               ? const Padding(
@@ -283,21 +294,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     height: 24,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.black,
+                      color: Colors.white,
                     ),
                   ),
                 )
               : Container(
-                  margin:
-                      const EdgeInsets.only(right: 12), // optional right margin
-                  width: 36, // circle width
-                  height: 36, // circle height
+                  margin: const EdgeInsets.only(right: 12),
+                  width: 36,
+                  height: 36,
                   decoration: const BoxDecoration(
-                    color: Colors.black, // background color
+                    color: Colors.white24,
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    iconSize: 20, // icon size
+                    iconSize: 20,
                     icon: const Icon(Icons.check, color: Colors.white),
                     onPressed: saveAll,
                     padding: EdgeInsets.zero,
@@ -311,86 +321,81 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Section: Personal Information
             Padding(
-              padding: const EdgeInsets.only(bottom: 8.0), // bottom margin
+              padding: const EdgeInsets.only(bottom: 8.0),
               child: Text(
                 'PERSONAL INFORMATION',
                 style: theme.textTheme.labelSmall?.copyWith(
                   letterSpacing: 1.5,
-                  color: colorScheme.onSurface.withOpacity(0.6),
+                  color: Colors.white60,
                 ),
               ),
             ),
 
-            // Personal Info
-            TextField(
-              controller: fullNameController,
-              decoration: InputDecoration(
-                hintText: 'Fullname',
-                isDense: true,
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: userNameController,
-              decoration: InputDecoration(
-                hintText: 'Username',
-                isDense: true,
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: emailController,
-              decoration: InputDecoration(
-                hintText: 'Email',
-                isDense: true,
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: bioController,
-              decoration: InputDecoration(
-                hintText: 'Bio',
-                isDense: true,
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 24),
+            // TextFields
+            ...[
+              {'controller': fullNameController, 'hint': 'Fullname'},
+              {'controller': userNameController, 'hint': 'Username'},
+              {
+                'controller': emailController,
+                'hint': 'Email',
+                'keyboard': TextInputType.emailAddress
+              },
+              {'controller': bioController, 'hint': 'Bio', 'maxLines': 3},
+            ].map((field) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: TextField(
+                  controller: field['controller'] as TextEditingController,
+                  keyboardType:
+                      field['keyboard'] as TextInputType? ?? TextInputType.text,
+                  maxLines: field['maxLines'] as int? ?? 1,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: field['hint'] as String,
+                    hintStyle: TextStyle(color: Colors.white54),
+                    filled: true,
+                    fillColor: Colors.grey[900],
+                    isDense: true,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25),
+                        borderSide: BorderSide.none),
+                  ),
+                ),
+              );
+            }).toList(),
 
-            // Social Links
+            const SizedBox(height: 16),
+
+            // Section: Social Links
             Row(
               children: [
-                Text('SOCIAL LINKS',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                        letterSpacing: 1.5,
-                        color: colorScheme.onSurface.withOpacity(0.6))),
+                Text(
+                  'SOCIAL LINKS',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    letterSpacing: 1.5,
+                    color: Colors.white60,
+                  ),
+                ),
                 const Spacer(),
                 IconButton(
-                    icon: Icon(Icons.add, color: colorScheme.primary),
-                    onPressed: addSocialLink),
+                  icon: Icon(Icons.add, color: colorScheme.primary),
+                  onPressed: addSocialLink,
+                ),
               ],
             ),
             const SizedBox(height: 8),
+
             if (socialLinks.isEmpty)
               Center(
                 child: Column(
                   children: [
-                    Icon(Icons.link_off,
-                        size: 28,
-                        color: colorScheme.onSurface.withOpacity(0.4)),
+                    Icon(Icons.link_off, size: 28, color: Colors.white30),
                     const SizedBox(height: 4),
                     Text('No social links added',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface.withOpacity(0.4))),
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: Colors.white30)),
                   ],
                 ),
               )
@@ -398,11 +403,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ...socialLinks.asMap().entries.map((entry) {
                 final index = entry.key;
                 return Card(
+                  color: Colors.grey[900],
                   margin: const EdgeInsets.symmetric(vertical: 6),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 1,
+                      borderRadius: BorderRadius.circular(12)),
                   child: Padding(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -413,8 +417,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           flex: 3,
                           child: TextField(
                             controller: _platformControllers[index],
+                            style: const TextStyle(color: Colors.white),
                             decoration: InputDecoration(
                               hintText: 'Platform',
+                              hintStyle: TextStyle(color: Colors.white54),
                               isDense: true,
                               contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 14),
@@ -423,7 +429,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 borderSide: BorderSide.none,
                               ),
                               filled: true,
-                              fillColor: Colors.grey[100],
+                              fillColor: Colors.grey[850],
                             ),
                             onChanged: (val) =>
                                 socialLinks[index]['platform_name'] = val,
@@ -436,8 +442,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           flex: 5,
                           child: TextField(
                             controller: _urlControllers[index],
+                            style: const TextStyle(color: Colors.white),
                             decoration: InputDecoration(
                               hintText: 'URL',
+                              hintStyle: TextStyle(color: Colors.white54),
                               isDense: true,
                               contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 14),
@@ -446,7 +454,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 borderSide: BorderSide.none,
                               ),
                               filled: true,
-                              fillColor: Colors.grey[100],
+                              fillColor: Colors.grey[850],
                             ),
                             onChanged: (val) =>
                                 socialLinks[index]['link_url'] = val,
@@ -458,11 +466,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         Container(
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.red.withOpacity(0.1),
+                            color: Colors.red.withOpacity(0.2),
                           ),
                           child: IconButton(
                             iconSize: 20,
-                            icon: const Icon(Icons.close, color: Colors.red),
+                            icon: const Icon(Icons.close,
+                                color: Colors.redAccent),
                             onPressed: () => removeSocialLink(index),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),

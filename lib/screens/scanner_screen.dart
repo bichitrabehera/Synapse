@@ -114,15 +114,15 @@ class _ScannerScreenState extends State<ScannerScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _circleButton(
-                  icon: _isFlashOn ? Icons.flash_on : Icons.flash_off,
-                  onTap: _toggleFlash,
-                ),
-                const SizedBox(width: 30),
-                _circleButton(
                   icon: _isCameraFacingFront
                       ? Icons.camera_front
                       : Icons.camera_rear,
                   onTap: _switchCamera,
+                ),
+                const SizedBox(width: 30),
+                _circleButton(
+                  icon: _isFlashOn ? Icons.flash_on : Icons.flash_off,
+                  onTap: _toggleFlash,
                 ),
               ],
             ),

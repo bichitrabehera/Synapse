@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:intl/intl.dart';
+// import 'package:intl/intl.dart';
 import 'package:tapapp_flutter/widgets/Loader.dart';
 
 import '../providers/auth_provider.dart';
@@ -37,7 +37,8 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     try {
       final auth = context.read<AuthProvider>();
-      final res = await Api.get('/user/profile', headers: auth.authHeader());
+      final res =
+          await Api.get('/user/profile', headers: await auth.authHeader());
       if (res.statusCode == 200) {
         profile = jsonDecode(res.body) as Map<String, dynamic>;
       } else {
@@ -71,160 +72,130 @@ class _HomeScreenState extends State<HomeScreen> {
     if (profile == null) return const SizedBox.shrink();
 
     final id = profile!['id'] ?? profile!['user_id'] ?? '';
+    final username = profile!['username'] ?? '';
     final qrValue = 'https://synapseeee.vercel.app/u/$id';
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor:
+          isDarkMode ? Colors.grey[900] : const ui.Color.fromARGB(255, 0, 0, 0),
       appBar: AppBar(
-        backgroundColor: const ui.Color.fromARGB(255, 255, 255, 255),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        centerTitle: false,
-        title: const Text(
+        automaticallyImplyLeading: false,
+        title: Text(
           'Synapse',
           style: TextStyle(
-            fontFamily: 'Cursive',
-            // fontFamily: "NataSans",
-            fontSize: 34,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2,
-            color: ui.Color.fromARGB(255, 0, 0, 0),
-          ),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            color: const ui.Color.fromARGB(255, 255, 255, 255),
-            height: 1,
+            fontFamily: "Cursive",
+            fontSize: 36,
+            fontWeight: FontWeight.w700,
+            color: isDarkMode
+                ? Colors.white
+                : const ui.Color.fromARGB(255, 255, 255, 255),
           ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            // Greeting
             Text(
-              'Your Digital Identity',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
+              'Hello @$username',
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
+
+            // Instruction
             Text(
-              'Scan this QR code to connect with others',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // QR Card
-            Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: isDarkMode
-                      ? theme.colorScheme.surfaceContainerHighest
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    if (!isDarkMode)
-                      BoxShadow(
-                        color: const ui.Color.fromARGB(255, 255, 255, 255)
-                            .withOpacity(0.1),
-                        blurRadius: 20,
-                        spreadRadius: 2,
-                        offset: const Offset(0, 10),
-                      ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.blue,
-                          width: 2, // blue border
-                        ),
-                      ),
-                      child: RepaintBoundary(
-                        key: _qrKey,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            QrImageView(
-                              data: qrValue,
-                              version: QrVersions.auto,
-                              size: 160,
-                              dataModuleStyle: QrDataModuleStyle(
-                                dataModuleShape:
-                                    QrDataModuleShape.circle, // ⬅ dotted style
-                                color: theme.colorScheme.onSurface,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      '@${profile!['username'] ?? ''}',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                )),
-            const SizedBox(height: 24),
-
-            // Stats
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              decoration: BoxDecoration(
-                color: isDarkMode
-                    ? theme.colorScheme.surfaceContainerHighest
-                    : const ui.Color.fromARGB(255, 255, 255, 255),
-                borderRadius: BorderRadius.circular(16),
+              'Scan to connect',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[400],
+                fontWeight: FontWeight.w400,
               ),
             ),
             const SizedBox(height: 32),
 
-            // Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2563EB),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () =>
-                        Share.share('Connect with me on Synapse: $qrValue'),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.share, color: theme.colorScheme.onPrimary),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Share QR Code',
-                          style: TextStyle(
-                            color: theme.colorScheme.onPrimary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
+            // QR Card
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.grey[900],
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.5),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
                   ),
+                ],
+              ),
+              child: RepaintBoundary(
+                key: _qrKey,
+                child: QrImageView(
+                  data: qrValue,
+                  version: QrVersions.auto,
+                  size: MediaQuery.of(context).size.width * 0.6,
+                  dataModuleStyle: QrDataModuleStyle(
+                    dataModuleShape: QrDataModuleShape.circle,
+                    color: Colors.white,
+                  ),
+                  eyeStyle: QrEyeStyle(
+                    eyeShape: QrEyeShape.square,
+                    color: Colors.blue.shade300,
+                  ),
+                  backgroundColor: Colors.transparent,
                 ),
-              ],
+              ),
             ),
             const SizedBox(height: 24),
+
+            // Username below QR
+            Text(
+              '@$username',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your Digital Identity',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+            const SizedBox(height: 40),
+
+            // Share Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade600,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  // elevation: 3,
+                ),
+                onPressed: () =>
+                    Share.share('Connect with me on Synapse: $qrValue'),
+                icon: const Icon(Icons.share),
+                label: const Text(
+                  'Share QR Code',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
           ],
         ),
       ),

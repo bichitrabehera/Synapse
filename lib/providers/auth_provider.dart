@@ -1,7 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:go_router/go_router.dart';   // ✅ import go_router
+import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+
 import '../services/api.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -26,69 +29,66 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 🔹 Google Login
+  Future<bool> loginWithGoogle() async {
+    _loading = true;
+    notifyListeners();
+
+    try {
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) return false;
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+      final firebaseUser = userCredential.user;
+
+      if (firebaseUser == null) return false;
+
+      // ✅ Just use Firebase authentication
+      final idToken = await firebaseUser.getIdToken(true);
+
+      _token = idToken;
+      _email = firebaseUser.email;
+
+      await _storage.write(key: 'token', value: _token);
+      await _storage.write(key: 'email', value: _email);
+
+      return true;
+    } catch (e) {
+      debugPrint('Google login error: $e');
+      rethrow;
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> logout(BuildContext context) async {
+    await FirebaseAuth.instance.signOut();
+    await GoogleSignIn().signOut();
+
     await _storage.delete(key: 'token');
     await _storage.delete(key: 'email');
     _token = null;
     _email = null;
     notifyListeners();
 
-    // ✅ use GoRouter to redirect to login
     if (context.mounted) {
-      context.go('/'); // or your login route path
+      context.go('/'); // back to login
     }
   }
 
-  Future<bool> login(String email, String password) async {
-    _loading = true;
-    notifyListeners();
-
-    try {
-      final res = await Api.postForm('/auth/login', {
-        'username': email, // backend expects "username"
-        'password': password,
-      });
-
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        _token = data['access_token'] ?? data['token'] ?? data['access'];
-        _email = email;
-        await _storage.write(key: 'token', value: _token);
-        await _storage.write(key: 'email', value: _email);
-        return true;
-      } else {
-        final errBody = _parseError(res.body);
-        throw Exception(errBody);
-      }
-    } catch (e) {
-      rethrow;
-    } finally {
-      _loading = false;
-      notifyListeners();
-    }
+  Future<Map<String, String>> authHeader() async {
+    final user = FirebaseAuth.instance.currentUser;
+    final token = user != null ? await user.getIdToken(true) : null;
+    return {'Authorization': 'Bearer ${token ?? ''}'};
   }
-
-  Future<bool> register(Map<String, dynamic> payload) async {
-    _loading = true;
-    notifyListeners();
-
-    try {
-      final res = await Api.post('/auth/register', payload);
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        return await login(payload['email'] as String, payload['password'] as String);
-      } else {
-        final errBody = _parseError(res.body, res.statusCode);
-        throw Exception(errBody);
-      }
-    } catch (e) {
-      rethrow;
-    } finally {
-      _loading = false;
-      notifyListeners();
-    }
-  }
-
-  Map<String, String> authHeader() => {'Authorization': 'Bearer ${_token ?? ''}'};
 
   String _parseError(String body, [int? status]) {
     try {
@@ -97,7 +97,7 @@ class AuthProvider extends ChangeNotifier {
         return parsed['detail'].toString();
       }
     } catch (_) {}
-    if (status == 400) return 'Invalid registration data';
+    if (status == 400) return 'Invalid data';
     if (status == 500) return 'Server error. Please try again later.';
     return body;
   }

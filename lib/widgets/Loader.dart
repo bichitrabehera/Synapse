@@ -48,7 +48,7 @@ class _JumpingLoaderState extends State<JumpingLoader>
   @override
   Widget build(BuildContext context) {
     return Container(
-      // color: Colors.white, // White background
+      color: const Color.fromARGB(255, 14, 14, 14), // White background
       child: Center(
         child: SizedBox(
           width: 60,
@@ -91,7 +91,7 @@ class _JumpingLoaderState extends State<JumpingLoader>
                           borderRadius: BorderRadius.circular(4),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: const Color.fromARGB(255, 192, 192, 192).withOpacity(0.1),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
