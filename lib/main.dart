@@ -8,6 +8,7 @@ import 'screens/scanned_profile_screen.dart';
 import 'widgets/bottom_nav.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -74,10 +75,14 @@ class TapApp extends StatelessWidget {
           );
 
           return MaterialApp.router(
-            title: 'TapCard',
+            title: 'SYNAPSE',
             routerConfig: router,
             debugShowCheckedModeBanner: false,
             theme: ThemeData(
+              textTheme: GoogleFonts.ubuntuTextTheme(
+                // <-- example font
+                Theme.of(context).textTheme,
+              ),
               colorSchemeSeed: Colors.blue,
               useMaterial3: true,
             ),

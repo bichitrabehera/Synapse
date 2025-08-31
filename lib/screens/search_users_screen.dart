@@ -127,7 +127,7 @@ class _SearchUsersScreenState extends State<SearchUsersScreen> {
                 hintText: 'Search Network',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(50),
                   borderSide: BorderSide.none,
                 ),
                 filled: true,

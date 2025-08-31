@@ -147,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   eyeStyle: QrEyeStyle(
                     eyeShape: QrEyeShape.square,
-                    color: Colors.blue.shade300,
+                    color: const ui.Color.fromRGBO(0, 96, 250, 1),
                   ),
                   backgroundColor: Colors.transparent,
                 ),
@@ -155,15 +155,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Username below QR
-            Text(
-              '@$username',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
             const SizedBox(height: 8),
             Text(
               'Your Digital Identity',
@@ -179,20 +170,23 @@ class _HomeScreenState extends State<HomeScreen> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade600,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor:
+                      const ui.Color.fromRGBO(0, 96, 250, 1),
+                  foregroundColor: const ui.Color.fromARGB(255, 255, 255, 255), // Icon & text color
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(100),
+                    borderRadius: BorderRadius.circular(50), // fully rounded
                   ),
-                  // elevation: 3,
                 ),
                 onPressed: () =>
                     Share.share('Connect with me on Synapse: $qrValue'),
-                icon: const Icon(Icons.share),
+                icon: const Icon(Icons.share, size: 20),
                 label: const Text(
                   'Share QR Code',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),

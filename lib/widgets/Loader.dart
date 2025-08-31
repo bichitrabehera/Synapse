@@ -10,33 +10,25 @@ class JumpingLoader extends StatefulWidget {
 class _JumpingLoaderState extends State<JumpingLoader>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _jumpAnimation;
-  late Animation<double> _rotateAnimation;
-  late Animation<double> _shadowScale;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
 
   @override
   void initState() {
     super.initState();
+
     _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 500))
-      ..repeat();
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
 
-    // Jump (translateY)
-    _jumpAnimation = TweenSequence([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: -18.0), weight: 25),
-      TweenSequenceItem(tween: Tween(begin: -18.0, end: -36.0), weight: 25),
-      TweenSequenceItem(tween: Tween(begin: -36.0, end: -18.0), weight: 25),
-      TweenSequenceItem(tween: Tween(begin: -18.0, end: 0.0), weight: 25),
-    ]).animate(_controller);
+    _scaleAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.linear),
+    );
 
-    // Rotation (0 → 90deg)
-    _rotateAnimation = Tween<double>(begin: 0, end: 90).animate(_controller);
-
-    // Shadow scaling
-    _shadowScale = TweenSequence([
-      TweenSequenceItem(tween: Tween(begin: 0.8, end: 1.0), weight: 50),
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.8), weight: 50),
-    ]).animate(_controller);
+    _opacityAnimation = Tween<double>(begin: 1, end: 0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.linear),
+    );
   }
 
   @override
@@ -45,63 +37,42 @@ class _JumpingLoaderState extends State<JumpingLoader>
     super.dispose();
   }
 
+  Widget _buildCircle(double delay) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (_, child) {
+        double progress = (_controller.value + delay) % 1.0;
+        return Transform.scale(
+          scale: progress,
+          child: Opacity(
+            opacity: 1 - progress,
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color.fromRGBO(0, 96, 250, 1), width: 16),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color.fromARGB(255, 14, 14, 14), // White background
+      color: Colors.black, // <-- black background
       child: Center(
         child: SizedBox(
-          width: 60,
-          height: 80,
+          width: 100,
+          height: 100,
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Shadow
-              AnimatedBuilder(
-                animation: _shadowScale,
-                builder: (_, child) {
-                  return Transform.scale(
-                    scaleX: _shadowScale.value,
-                    scaleY: 1,
-                    child: Container(
-                      width: 48,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                      margin: const EdgeInsets.only(top: 60),
-                    ),
-                  );
-                },
-              ),
-              // Jumping cube
-              AnimatedBuilder(
-                animation: _controller,
-                builder: (_, child) {
-                  return Transform.translate(
-                    offset: Offset(0, _jumpAnimation.value),
-                    child: Transform.rotate(
-                      angle: _rotateAnimation.value * 3.1416 / 180,
-                      child: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB), // Blue cube
-                          borderRadius: BorderRadius.circular(4),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color.fromARGB(255, 192, 192, 192).withOpacity(0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+              _buildCircle(0.0), // first circle
+              _buildCircle(0.5), // second circle delayed
             ],
           ),
         ),
