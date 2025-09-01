@@ -43,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
         profile = jsonDecode(res.body) as Map<String, dynamic>;
       } else {
         error = 'Failed to load profile: ${res.statusCode}';
-        context.read<AuthProvider>().logout(context);
+        context.read<AuthProvider>().logout();
       }
     } catch (e) {
       error = e.toString();

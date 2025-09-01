@@ -32,33 +32,29 @@ class TapApp extends StatelessWidget {
         builder: (context, auth, _) {
           final router = GoRouter(
             initialLocation: '/login',
+            refreshListenable: auth, // 👈 add this
             redirect: (ctx, state) {
               debugPrint("🔄 Redirect check: loggedIn=${auth.loggedIn}, "
                   "loading=${auth.loading}, "
                   "location=${state.matchedLocation}");
 
-              // Don't redirect while still loading auth state
+              // Wait until AuthProvider finishes any async init
               if (auth.loading) return null;
 
               final loggedIn = auth.loggedIn;
               final isLoginPage = state.matchedLocation == '/login';
 
-              // If not logged in and not on login page → go to login
-              if (!loggedIn && !isLoginPage) {
-                debugPrint("➡️ Redirecting to login (not authenticated)");
-                return '/login';
+              if (!loggedIn) {
+                return isLoginPage ? null : '/login';
               }
 
-              // If logged in and on login page → go to home
               if (loggedIn && isLoginPage) {
-                debugPrint("➡️ Redirecting to home (already authenticated)");
                 return '/';
               }
 
-              // Otherwise, stay where you are
-              debugPrint("✅ No redirect needed");
               return null;
             },
+
             routes: [
               GoRoute(path: '/', builder: (ctx, st) => const BottomNav()),
               GoRoute(

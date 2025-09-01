@@ -111,7 +111,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    // final colorScheme = theme.colorScheme;
     final auth = context.read<AuthProvider>();
 
     if (loading) {
@@ -231,7 +231,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 GestureDetector(
                   onTap: () {
                     Navigator.pop(context);
-                    auth.logout(context);
+                    auth.logout();
                   },
                   child: const Padding(
                     padding: EdgeInsets.symmetric(vertical: 14),

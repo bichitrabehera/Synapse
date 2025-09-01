@@ -82,9 +82,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class Api {
   static String get baseUrl {
-    if (Platform.isAndroid) return 'http://10.0.2.2:8000/api';
-    if (Platform.isIOS) return 'http://localhost:8000/api';
-    return 'http://127.0.0.1:8000/api';
+    // if (Platform.isAndroid) return 'http://10.0.2.2:8000/api';
+    // if (Platform.isIOS) return 'http://localhost:8000/api';
+    return 'https://tapcard-backend.onrender.com/api';
   }
 
   static Future<String?> _getToken() async {
@@ -114,7 +114,9 @@ class Api {
       {Map<String, String>? headers, bool useAuth = true}) async {
     // Ensure path is prefixed with a slash exactly once
     final uri = Uri.parse('$baseUrl${path.startsWith('/') ? path : '/$path'}');
-    final h = useAuth ? await _headers(headers) : <String, String>{'Content-Type': 'application/json', ...?headers};
+    final h = useAuth
+        ? await _headers(headers)
+        : <String, String>{'Content-Type': 'application/json', ...?headers};
 
     // Enforce a 15-second timeout on the POST request
     return http
