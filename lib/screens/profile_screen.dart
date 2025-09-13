@@ -42,24 +42,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final auth = context.read<AuthProvider>();
       final p =
-          await Api.get('/user/profile', headers: await auth.authHeader());
+          await Api.get('/user/profile/', headers: await auth.authHeader());
+
+      print('Profile GET response: ${p.statusCode} - ${p.body}');
 
       if (p.statusCode == 200) {
         profile = jsonDecode(p.body);
 
-        if (profile != null && profile!['social_links'] != null) {
-          links = List<dynamic>.from(profile!['social_links']);
-        } else {
-          final l = await Api.get('/user/social-links',
-              headers: await auth.authHeader());
-          if (l.statusCode == 200) {
-            final responseData = jsonDecode(l.body);
-            if (responseData is List) {
-              links = responseData;
-            } else if (responseData is Map &&
-                responseData.containsKey('data')) {
-              links = responseData['data'];
-            }
+        // Always fetch social links separately to ensure fresh data
+        final l = await Api.get('/user/social-links/',
+            headers: await auth.authHeader());
+        print('Social links GET response: ${l.statusCode} - ${l.body}');
+        if (l.statusCode == 200) {
+          final responseData = jsonDecode(l.body);
+          if (responseData is List) {
+            links = responseData;
+          } else if (responseData is Map &&
+              responseData.containsKey('data')) {
+            links = responseData['data'];
           }
         }
 
@@ -152,7 +152,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+                const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
                 const SizedBox(height: 16),
                 Text('Could not load profile',
                     style: theme.textTheme.titleMedium
@@ -349,8 +349,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     side: BorderSide(color: Colors.grey[700]!),
                   ),
-                  onPressed: () {
-                    context.push('/edit');
+                  onPressed: () async {
+                    final result = await context.push('/edit');
+                    if (result == true) {
+                      _load();
+                    }
                   },
                   child: const Text(
                     "Edit Profile",

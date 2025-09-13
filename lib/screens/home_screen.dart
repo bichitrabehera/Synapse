@@ -141,13 +141,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   data: qrValue,
                   version: QrVersions.auto,
                   size: MediaQuery.of(context).size.width * 0.6,
-                  dataModuleStyle: QrDataModuleStyle(
+                  dataModuleStyle: const QrDataModuleStyle(
                     dataModuleShape: QrDataModuleShape.circle,
                     color: Colors.white,
                   ),
-                  eyeStyle: QrEyeStyle(
+                  eyeStyle: const QrEyeStyle(
                     eyeShape: QrEyeShape.square,
-                    color: const ui.Color.fromRGBO(0, 96, 250, 1),
+                    color: ui.Color.fromRGBO(0, 96, 250, 1),
                   ),
                   backgroundColor: Colors.transparent,
                 ),
