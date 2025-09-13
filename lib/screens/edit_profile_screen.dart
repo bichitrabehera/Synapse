@@ -151,7 +151,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       // Save profile
       await Api.put(
-        '/user/profile',
+        '/user/profile/',
         {
           'fullname': fullNameController.text.trim(),
           'username': userNameController.text.trim(),
@@ -172,11 +172,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         if (link['id'] != null &&
             link['id'].toString().isNotEmpty &&
             link['id'].toString() != 'null') {
-          await Api.put('/user/social-links/${link['id']}', data,
+          final res = await Api.put('/user/social-links/${link['id']}/', data,
               headers: await auth.authHeader());
+          print('Social link PUT response: ${res.statusCode} - ${res.body}');
         } else {
-          final res = await Api.post('/user/social-links', data,
+          final res = await Api.post('/user/social-links/', data,
               headers: await auth.authHeader());
+          print('Social link POST response: ${res.statusCode} - ${res.body}');
           if (res.statusCode == 201 || res.statusCode == 200) {
             final created = jsonDecode(res.body);
             final index = socialLinks.indexWhere((s) =>
@@ -193,13 +195,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         return platform.isEmpty || url.isEmpty;
       });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Profile updated successfully'),
-          backgroundColor: Colors.green,
-        ));
-        Navigator.of(context).pop();
-      }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Profile updated successfully'),
+            backgroundColor: Colors.green,
+          ));
+          Navigator.of(context).pop(true);
+        }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -354,7 +356,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: field['hint'] as String,
-                    hintStyle: TextStyle(color: Colors.white54),
+                    hintStyle: const TextStyle(color: Colors.white54),
                     filled: true,
                     fillColor: Colors.grey[900],
                     isDense: true,
@@ -364,7 +366,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                 ),
               );
-            }).toList(),
+            }),
 
             const SizedBox(height: 16),
 
@@ -391,7 +393,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               Center(
                 child: Column(
                   children: [
-                    Icon(Icons.link_off, size: 28, color: Colors.white30),
+                    const Icon(Icons.link_off, size: 28, color: Colors.white30),
                     const SizedBox(height: 4),
                     Text('No social links added',
                         style: theme.textTheme.bodySmall
@@ -420,7 +422,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             style: const TextStyle(color: Colors.white),
                             decoration: InputDecoration(
                               hintText: 'Platform',
-                              hintStyle: TextStyle(color: Colors.white54),
+                              hintStyle: const TextStyle(color: Colors.white54),
                               isDense: true,
                               contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 14),
@@ -445,7 +447,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             style: const TextStyle(color: Colors.white),
                             decoration: InputDecoration(
                               hintText: 'URL',
-                              hintStyle: TextStyle(color: Colors.white54),
+                              hintStyle: const TextStyle(color: Colors.white54),
                               isDense: true,
                               contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 14),

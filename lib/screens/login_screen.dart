@@ -97,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 32),
 
                 // Welcome Text
-                Text(
+                const Text(
                   "Welcome to Synapse",
                   style: TextStyle(
                     fontSize: 28,
