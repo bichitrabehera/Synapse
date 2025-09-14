@@ -7,6 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
 import '../services/api.dart';
 import 'package:tapapp_flutter/widgets/Loader.dart';
+import 'followers_screen.dart';
+import 'following_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -22,6 +24,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? error;
   int followersCount = 0;
   int followingCount = 0;
+  Map<String, dynamic> stats = {};
 
   @override
   void initState() {
@@ -29,9 +32,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _load();
   }
 
-  Future<void> _launchUrl(String url) async {
+  Future<void> _launchUrl(String url, String platform) async {
     final uri = Uri.tryParse(url);
     if (uri == null) return;
+
+    // Log link click
+    try {
+      final auth = context.read<AuthProvider>();
+      await Api.post('/analytics/', {'event_type': 'link_click', 'event_data': platform},
+          headers: await auth.authHeader());
+    } catch (e) {
+      debugPrint('Failed to log link click: $e');
+    }
+
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       debugPrint('Could not launch $url');
     }
@@ -42,7 +55,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final auth = context.read<AuthProvider>();
       final p =
-          await Api.get('/user/profile/', headers: await auth.authHeader());
+          await Api.get('/user/profile', headers: await auth.authHeader());
 
       print('Profile GET response: ${p.statusCode} - ${p.body}');
 
@@ -50,7 +63,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         profile = jsonDecode(p.body);
 
         // Always fetch social links separately to ensure fresh data
-        final l = await Api.get('/user/social-links/',
+        final l = await Api.get('/user/social-links',
             headers: await auth.authHeader());
         print('Social links GET response: ${l.statusCode} - ${l.body}');
         if (l.statusCode == 200) {
@@ -61,6 +74,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               responseData.containsKey('data')) {
             links = responseData['data'];
           }
+        }
+
+        // Fetch stats
+        final s = await Api.get('/analytics/stats',
+            headers: await auth.authHeader());
+        print('Stats GET response: ${s.statusCode} - ${s.body}');
+        if (s.statusCode == 200) {
+          stats = jsonDecode(s.body);
         }
 
         // Populate followers and following counts
@@ -287,14 +308,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _buildStat("Followers", followersCount.toString()),
-                        _buildStat("Following", followingCount.toString()),
-                      ],
-                    ),
-                  ),
+                  _buildStat("Followers", followersCount.toString()),
+                  _buildStat("Following", followingCount.toString()),
                 ],
               ),
-              const SizedBox(height: 12),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                if (profile != null && profile!['id'] != null) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => FollowersScreen(userId: profile!['id']),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Followers'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (profile != null && profile!['id'] != null) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => FollowingScreen(userId: profile!['id']),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Following'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
 
               // Name + Username
               Text(
@@ -323,6 +374,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: const TextStyle(
                       fontSize: 13, height: 1.3, color: Colors.white70),
                 ),
+
+              const SizedBox(height: 6),
+
+              // Stats
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildStat("Link Clicks", (stats['link_click'] ?? 0).toString()),
+                  _buildStat("Profile Views", (stats['profile_view'] ?? 0).toString()),
+                  _buildStat("QR Scans", (stats['qr_scan'] ?? 0).toString()),
+                ],
+              ),
 
               const SizedBox(height: 6),
 
@@ -371,7 +434,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: links.map((link) {
                     return InkWell(
-                      onTap: () => _launchUrl(link['link_url']),
+                      onTap: () => _launchUrl(link['link_url'], link['platform_name']),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         child: Row(

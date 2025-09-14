@@ -1,3 +1,4 @@
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -151,7 +152,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       // Save profile
       await Api.put(
-        '/user/profile/',
+        '/user/profile',
         {
           'fullname': fullNameController.text.trim(),
           'username': userNameController.text.trim(),
@@ -172,11 +173,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         if (link['id'] != null &&
             link['id'].toString().isNotEmpty &&
             link['id'].toString() != 'null') {
-          final res = await Api.put('/user/social-links/${link['id']}/', data,
+          final res = await Api.put('/user/social-links/${link['id']}', data,
               headers: await auth.authHeader());
           print('Social link PUT response: ${res.statusCode} - ${res.body}');
         } else {
-          final res = await Api.post('/user/social-links/', data,
+          final res = await Api.post('/user/social-links', data,
               headers: await auth.authHeader());
           print('Social link POST response: ${res.statusCode} - ${res.body}');
           if (res.statusCode == 201 || res.statusCode == 200) {
